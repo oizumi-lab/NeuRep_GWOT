@@ -12,17 +12,18 @@ from GW_methods.src.align_representations import Representation, AlignRepresenta
 #%%
 compute_OT = True
 
-subj_list = [f"subj0{i+1}" for i in range(8)]
+subj_list = [f"subj0{i+1}" for i in range(6)]
 roi_list = ["pVTC"]
 
 for roi in roi_list:
     representations = []
     for subj in subj_list:
-        embedding = np.load(f"/home1/data/common-data/natural-scenes-dataset/rsa/roi_analyses/{subj}_{roi}_fullrdm_correlation.npy")
+        RDM = np.load(f"/home1/data/common-data/natural-scenes-dataset/rsa/roi_analyses/{subj}_{roi}_fullrdm_correlation.npy")
         representation = Representation(
             name=f"{subj}_{roi}",
-            embedding=embedding,
-            metric="euclidean"
+            sim_mat=RDM,
+            metric="euclidean",
+            get_embedding=False
         )
         representations.append(representation)
 
@@ -50,10 +51,12 @@ for roi in roi_list:
         #title_size = 15, 
         cmap = "rocket",
         #cbar_ticks_size=30,
-        font = "Arial",
-        cbar_label="Dissimilarity",
+        #font = "Arial",
+        #cbar_label="Dissimilarity",
         #cbar_label_size=40,
         )
+    
+    os.makedirs(f"../results/figs/{roi}/", exist_ok=True)
     
     alignment.show_sim_mat(
         visualization_config=vis_config, 
@@ -62,13 +65,14 @@ for roi in roi_list:
         )
     alignment.RSA_get_corr()
     
+    #%%
     vis_config_OT = VisualizationConfig(
         figsize=(8, 6), 
-        title_size = 15, 
+        #title_size = 15, 
         cmap = "rocket",
         #cbar_ticks_size=30,
-        font = "Arial",
-        cbar_label="Probability",
+        #font = "Arial",
+        #cbar_label="Probability",
         #cbar_label_size=40,
         #color_labels = new_color_order,
         #color_label_width = 5,
