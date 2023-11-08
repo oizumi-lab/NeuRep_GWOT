@@ -69,7 +69,9 @@ categories = nsda.read_image_coco_category(
         #njobs=2
     )
 
+#%%
 # and save them
+categories = np.array(categories, dtype=object)
 np.save(op.join(betas_dir, 'all_stims_category_labels.npy'), categories)
 
 # %%

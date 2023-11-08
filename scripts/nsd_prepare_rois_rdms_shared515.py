@@ -23,11 +23,7 @@ n_subjects = 8
 subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
 
 #%%
-subs[2:3]
-
-#%%
-
-for sub in subs[:1]:
+for sub in subs:
 
     # set up directories
     #nsd_dir = "/home1/common-data/natural-scenes-dataset/"
@@ -79,61 +75,72 @@ for sub in subs[:1]:
     conditions_bool = [
         True if np.sum(conditions == x) == 3 else False for x in conditions]
 
-    conditions_sampled = conditions[conditions_bool]
+    #conditions_sampled = conditions[conditions_bool]
 
     # find the subject's unique condition list (sample pool)
-    sample = np.unique(conditions[conditions_bool])
+    #sample = np.unique(conditions[conditions_bool])
+    sample_shared515 = np.array(np.load("../data/shared515ids.npy"))
 
-    betas_file = os.path.join(
-        outpath, f'{sub}_betas_list_{targetspace}.npy'
-    )
-    betas_mean_file = os.path.join(
-            outpath, f'{sub}_betas_list_{targetspace}_averaged.npy'
+    #betas_file = os.path.join(
+    #    outpath, f'{sub}_betas_list_{targetspace}.npy'
+    #)
+
+    betas_mean_shared515_file = os.path.join(
+            outpath, f'{sub}_betas_list_{targetspace}_averaged_shared515.npy'
     )
 
-    if not os.path.exists(betas_mean_file):
+    if not os.path.exists(betas_mean_shared515_file):
         # get betas
-        betas_mean = get_betas(
+        betas_mean_shared515 = get_betas(
             nsd_dir,
             sub,
             n_sessions,
             targetspace=targetspace,
         )
         print(f'concatenating betas for {sub}')
-        betas_mean = np.concatenate(betas_mean, axis=1).astype(np.float32)
+        betas_mean_shared515 = np.concatenate(betas_mean_shared515, axis=1).astype(np.float32)
 
         print(f'averaging betas for {sub}')
-        betas_mean = average_over_conditions(
-            betas_mean,
+        #betas_mean = average_over_conditions(
+        #    betas_mean,
+        #    conditions,
+        #    conditions_sampled,
+        #).astype(np.float32)
+        
+        betas_mean_shared515 = average_over_conditions(
+            betas_mean_shared515,
             conditions,
-            conditions_sampled,
+            sample_shared515,
         ).astype(np.float32)
 
         # print
         print(f'saving condition averaged betas for {sub}')
-        np.save(betas_mean_file, betas_mean)
+        #np.save(betas_mean_file, betas_mean)
+        np.save(betas_mean_shared515_file, betas_mean_shared515)
+        
 
     else:
         print(f'loading betas for {sub}')
-        betas_mean = np.load(betas_mean_file, allow_pickle=True)
+        #betas_mean = np.load(betas_mean_file, allow_pickle=True)
+        betas_mean_shared515 = np.load(betas_mean_shared515_file, allow_pickle=True)
 
 
     # print
     print(f'saving condition list for {sub}')
-    np.save(
-            os.path.join(
-                outpath, f'{sub}_condition_list.npy'
-            ),
-            conditions_sampled
-        )
+    #np.save(
+    #        os.path.join(
+    #            outpath, f'{sub}_condition_list.npy'
+    #        ),
+    #        conditions_sampled
+    #    )
 
     # save the subject's full ROI RDMs
-    #for roi in range(1, 6):
-    for roi in range(1, 2):
+    for roi in range(1, 6):
+    #for roi in range(1, 2):
         mask_name = ROIS[roi]
 
-        rdm_file = os.path.join(
-            outpath, f'{sub}_{mask_name}_fullrdm_correlation.npy'
+        rdm_file_shared515 = os.path.join(
+            outpath, f'{sub}_{mask_name}_fullrdm_shared515_correlation.npy'
         )
 
         #if not os.path.exists(rdm_file):
@@ -142,23 +149,25 @@ for sub in subs[:1]:
         vs_mask = maskdata == roi
         print(f'working on ROI: {mask_name}')
 
-        masked_betas = betas_mean[vs_mask, :]
+        #masked_betas = betas_mean[vs_mask, :]
+        masked_betas_shared515 = betas_mean_shared515[vs_mask, :]
 
         good_vox = [
             True if np.sum(
                 np.isnan(x)
-                ) == 0 else False for x in masked_betas]
+                ) == 0 else False for x in masked_betas_shared515]
 
         if np.sum(good_vox) != len(good_vox):
             print(f'found some NaN for ROI: {mask_name} - {sub}')
 
-        masked_betas = masked_betas[good_vox, :]
+        masked_betas_shared515 = masked_betas_shared515[good_vox, :]
 
         # prepare for correlation distance
-        X = masked_betas.T
+        X = masked_betas_shared515.T
 
         print(f'computing RDM for roi: {mask_name}')
         start_time = time.time()
+        
         #rdm = pdist(X, metric='correlation')
         rdm = cdist(X, X, metric='correlation')
 
@@ -172,22 +181,22 @@ for sub in subs[:1]:
         )
         print(f'saving full rdm for {mask_name} : {sub}')
         np.save(
-            rdm_file,
+            rdm_file_shared515,
             rdm
         )
 
 # %%
-max_list = []
-for i in range(8):
-    maxes = []
-    for j in range(n_sessions):
-        df = nsda.read_behavior(f"subj0{i+1}", session_index=j+1)["10KID"]
-        df = df[df <= 1000]
-        maxes.append(df.max())
-    maxes = list(filter(lambda x: not np.isnan(x), maxes))
-    max_list.append(np.max(maxes))
-print(max_list)
-#print(nsda.read_behavior(f"subj0{i+1}", session_index=1)["10KID"].max())
-# %%
-betas_mean
+#max_list = []
+#for i in range(8):
+#    maxes = []
+#    for j in range(n_sessions):
+#        df = nsda.read_behavior(f"subj0{i+1}", session_index=j+1)["10KID"]
+#        df = df[df <= 1000]
+#        maxes.append(df.max())
+#    maxes = list(filter(lambda x: not np.isnan(x), maxes))
+#    max_list.append(np.max(maxes))
+#print(max_list)
+##print(nsda.read_behavior(f"subj0{i+1}", session_index=1)["10KID"].max())
+## %%
+#betas_mean
 # %%
