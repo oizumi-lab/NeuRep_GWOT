@@ -6,6 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 import time
 import numpy as np
 import nibabel as nib
+import shutil
 from scipy.spatial.distance import pdist, cdist
 from nsd_access.nsd_access import NSDAccess
 from nsddatapaper_rsa.utils.nsd_get_data import get_conditions, get_betas
@@ -26,7 +27,7 @@ subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
 
 #%%
 samples = []
-for sub in subs:
+for sub in subs[:1]:
 
     # set up directories
     #nsd_dir = "/home1/common-data/natural-scenes-dataset/"
@@ -90,5 +91,18 @@ shared_515 = reduce(np.intersect1d, samples)
 # %%
 print(len(shared_515))
 # %%
-np.save("../data/shared515ids", shared_515)
+np.save("../data/shared515ids", shared_515) # indices start from 1
+# %%
+# extract images of shared 515
+data_path = '/home1/data/common-data/natural-scenes-dataset/nsddata_stimuli/stimuli/nsd/'
+shared_515 = np.load("../data/shared515ids.npy", allow_pickle=True)
+
+shared_515 -= 1
+
+for i in shared_515:
+    source_file = os.path.join(data_path, f'image{i}/image{i}.png')
+    destination_file = os.path.join(data_path, 'shared_515', f'image{i}/image{i}.png')
+    
+    os.makedirs(os.path.join(data_path, 'shared_515', f'image{i}/'), exist_ok=True)
+    shutil.copy(source_file, destination_file)
 # %%

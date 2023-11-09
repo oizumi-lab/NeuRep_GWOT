@@ -14,10 +14,10 @@ from GW_methods.src.align_representations import Representation, AlignRepresenta
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
-roi_list = ["pVTC"]
-n_sample = 1
+roi_list = ["pVTC"] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+n_sample = 5
 
-compute_OT = True
+compute_OT = False
 
 #%%
 def sample_participants(N, Z, seed):
@@ -67,7 +67,7 @@ for roi in roi_list:
             n_iter=1, 
             max_iter=200,
             sampler_name="tpe", 
-            eps_list=[1e-3, 1],
+            eps_list=[1e-4, 1e-2],
             eps_log=True,
             )
 
@@ -82,7 +82,7 @@ for roi in roi_list:
         vis_config = VisualizationConfig(
             figsize=(8, 6), 
             #title_size = 15, 
-            cmap = "rocket",
+            cmap = "rocket_r",
             #cbar_ticks_size=30,
             #font = "Arial",
             #cbar_label="Dissimilarity",
@@ -102,7 +102,7 @@ for roi in roi_list:
         vis_config_OT = VisualizationConfig(
             figsize=(8, 6), 
             #title_size = 15, 
-            cmap = "rocket",
+            cmap = "rocket_r",
             #cbar_ticks_size=30,
             #font = "Arial",
             #cbar_label="Probability",
@@ -133,7 +133,8 @@ for roi in roi_list:
             #xticks_rotation=0,
             #ylabel_size=35,
             #yticks_size=30,
-            #cbar_label_size=30
+            #cbar_label_size=30,
+            plot_eps_log=True
             )
 
         alignment.show_optimization_log(
