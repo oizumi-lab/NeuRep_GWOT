@@ -9,12 +9,17 @@ import torch
 import random
 
 from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
+from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
 #%%
 n_subj = 8
 roi_list = ["pVTC"] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
 
 compute_OT = True
+
+# category data
+category_mat = pd.read_csv("../data/category_mat_shared515.csv")
+object_labels, category_idx_list, category_num_list, new_category_name_list = get_category_data(category_mat)
 
 #%%
 # fMRI
@@ -29,7 +34,12 @@ mean_RDM = np.mean(RDMs, axis=0)
 fMRI = Representation(
     name=f"fMRI_{roi}",
     sim_mat=mean_RDM,
-    get_embedding=False
+    get_embedding=False,
+    object_labels=object_labels,
+    category_name_list=new_category_name_list,
+    num_category_list=category_num_list,
+    category_idx_list=category_idx_list,
+    func_for_sort_sim_mat=sort_matrix_with_categories
 )
 
 # models
@@ -56,7 +66,12 @@ for model_name in model_list[:]:
     representation = Representation(
         name = model_name, 
         sim_mat = sim_mat,
-        get_embedding=False
+        get_embedding=False,
+        object_labels=object_labels,
+        category_name_list=new_category_name_list,
+        num_category_list=category_num_list,
+        category_idx_list=category_idx_list,
+        func_for_sort_sim_mat=sort_matrix_with_categories
     )
     representations.append(representation)
 
@@ -92,6 +107,7 @@ vis_config = VisualizationConfig(
 os.makedirs(f"../results/figs/{roi}/models/", exist_ok=True)
 
 alignment.show_sim_mat(
+    sim_mat_format="sorted",
     visualization_config=vis_config, 
     show_distribution=False,
     fig_dir=f"../results/figs/{roi}/models/"

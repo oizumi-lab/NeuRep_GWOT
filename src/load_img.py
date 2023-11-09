@@ -29,13 +29,13 @@ from transformers import ViTFeatureExtractor, ViTForImageClassification, ViTImag
 
 # %%
 # nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-THINGS_IMAGE_PATH = "/home/masaru-sasaki/Data/THINGS/Images"
-THINGS_IMAGE_METADATA_PATH = "/home1/common-data/THINGS-images/THINGS/Metadata"
-THINGS_CONCEPTS_IMAGE_PATH = "/home1/common-data/THINGS-images/concepts/" #61番用
+#THINGS_IMAGE_PATH = "/home/masaru-sasaki/Data/THINGS/Images"
+#THINGS_IMAGE_METADATA_PATH = "/home1/common-data/THINGS-images/THINGS/Metadata"
+#THINGS_CONCEPTS_IMAGE_PATH = "/home1/common-data/THINGS-images/concepts/" #61番用
 
-NSD_IMAGE_PATH = "/home1/data/common-data/natural-scenes-dataset/nsddata_stimuli/stimuli/nsd/"
+#NSD_IMAGE_PATH = "/home1/data/common-data/natural-scenes-dataset/nsddata_stimuli/stimuli/nsd/"
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]

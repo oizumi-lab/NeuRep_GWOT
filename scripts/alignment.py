@@ -9,13 +9,14 @@ import torch
 import random
 
 from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
+from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
 #%%
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 roi_list = ["pVTC"] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
-n_sample = 5
+n_sample =1
 
 compute_OT = False
 
@@ -39,6 +40,10 @@ for seed in range(n_sample):
     groups = split_lists(subj_list, n_groups)
     groups_list.append(groups)
     
+# category data
+category_mat = pd.read_csv("../data/category_mat_shared515.csv")
+object_labels, category_idx_list, category_num_list, new_category_name_list = get_category_data(category_mat)
+    
 #%%
 for roi in roi_list:
     for seed, groups in enumerate(groups_list):
@@ -56,7 +61,12 @@ for roi in roi_list:
                 name=f"Group{j+1}_{roi}",
                 sim_mat=mean_RDM,
                 metric="euclidean",
-                get_embedding=False
+                get_embedding=False,
+                object_labels=object_labels,
+                category_name_list=new_category_name_list,
+                num_category_list=category_num_list,
+                category_idx_list=category_idx_list,
+                func_for_sort_sim_mat=sort_matrix_with_categories
             )
             representations.append(representation)
 
@@ -92,6 +102,7 @@ for roi in roi_list:
         os.makedirs(f"../results/figs/{roi}/seed{seed}/", exist_ok=True)
 
         alignment.show_sim_mat(
+            sim_mat_format="sorted",
             visualization_config=vis_config, 
             show_distribution=False,
             fig_dir=f"../results/figs/{roi}/seed{seed}/"
@@ -118,6 +129,7 @@ for roi in roi_list:
         alignment.gw_alignment(
             compute_OT=compute_OT,
             delete_results=False,
+            OT_format="sorted",
             visualization_config=vis_config_OT,
             fig_dir=f"../results/figs/{roi}/seed{seed}/"
             )
