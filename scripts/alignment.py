@@ -15,8 +15,8 @@ from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
-roi_list = ["pVTC"] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
-n_sample =1
+roi_list = ['pVTC','aVTC'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+n_sample = 1
 
 compute_OT = False
 
@@ -41,7 +41,7 @@ for seed in range(n_sample):
     groups_list.append(groups)
     
 # category data
-category_mat = pd.read_csv("../data/category_mat_shared515.csv")
+category_mat = pd.read_csv("../data/category_mat_shared515.csv", index_col=0)
 object_labels, category_idx_list, category_num_list, new_category_name_list = get_category_data(category_mat)
     
 #%%
@@ -109,7 +109,6 @@ for roi in roi_list:
             )
         alignment.RSA_get_corr()
 
-        #%%
         vis_config_OT = VisualizationConfig(
             figsize=(8, 6), 
             #title_size = 15, 
@@ -126,10 +125,11 @@ for roi in roi_list:
             #ylabel_size = 40,
             )
 
-        alignment.gw_alignment(
+        OT_sorted = alignment.gw_alignment(
             compute_OT=compute_OT,
             delete_results=False,
             OT_format="sorted",
+            return_data=True,
             visualization_config=vis_config_OT,
             fig_dir=f"../results/figs/{roi}/seed{seed}/"
             )
@@ -166,6 +166,21 @@ for roi in roi_list:
             eval_type="ot_plan", 
             fig_dir=f"../results/figs/{roi}/seed{seed}/", 
             fig_name="accuracy_ot_plan.png"
+            )
+        
+        # category level
+        eval_mat = np.matmul(category_mat.values, category_mat.values.T)
+        alignment.calc_accuracy(
+            top_k_list=top_k_list, 
+            eval_type="ot_plan",
+            ot_to_evaluate=OT_sorted[0],
+            eval_mat = eval_mat
+        )
+        
+        alignment.plot_accuracy(
+            eval_type="ot_plan", 
+            fig_dir=f"../results/figs/{roi}/seed{seed}/", 
+            fig_name="category_level_accuracy_ot_plan.png"
             )
     
 # %%

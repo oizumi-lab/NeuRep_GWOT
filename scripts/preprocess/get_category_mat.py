@@ -137,3 +137,8 @@ if __name__ == '__main__':
     category_mat_shared515 = category_mat_df_sorted.loc[shared515-1]
     category_mat_shared515.to_csv('../data/category_mat_shared515.csv')
     # %%
+    # save original
+    original_mat = pd.DataFrame(data=category_vectors, columns=unique_categories, index=conditions)
+    original_mat = original_mat.reindex(columns=sorted_list)
+    original_mat.to_csv("../data/category_mat_original.csv")
+# %%
