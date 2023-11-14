@@ -35,7 +35,7 @@ from transformers import ViTFeatureExtractor, ViTForImageClassification, ViTImag
 #THINGS_IMAGE_METADATA_PATH = "/home1/common-data/THINGS-images/THINGS/Metadata"
 #THINGS_CONCEPTS_IMAGE_PATH = "/home1/common-data/THINGS-images/concepts/" #61番用
 
-#NSD_IMAGE_PATH = "/home1/data/common-data/natural-scenes-dataset/nsddata_stimuli/stimuli/nsd/"
+NSD_IMAGE_PATH = "/home1/data/common-data/natural-scenes-dataset/nsddata_stimuli/stimuli/nsd/"
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
@@ -408,4 +408,18 @@ if __name__ == '__main__':
     # %%
     # mean_cos_sim = test.make_avg_class_from_all_images(cosine_dis_sim, label)
     
+    # %%
+    dataset_path = '/home1/data/common-data/natural-scenes-dataset/nsddata_stimuli/stimuli/nsd/shared_515'
+    
+    pre_mean = IMAGENET_MEAN
+    pre_std = IMAGENET_STD
+    
+    transform = transforms.Compose([
+                        transforms.Resize(PIC_SIZE), # (256, 256) に変換。
+                        transforms.CenterCrop(CROP_SIZE),  # 画像の中心に合わせて、(224, 224) で切り抜く
+                        transforms.ToTensor(),  # テンソルにする。
+                        transforms.Normalize(pre_mean, pre_std),  # 標準化する。
+                    ])
+
+    dataset = torchvision.datasets.ImageFolder(root = dataset_path, transform = transform)
 # %%

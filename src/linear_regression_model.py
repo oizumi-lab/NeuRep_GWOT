@@ -38,8 +38,7 @@ class ModelTraining():
         for batch, (X, y) in enumerate(dataloader):
             X, y = X.to(self.device), y.to(self.device)
             pred = self.model(X)
-            sim = self.compute_similarity(pred)
-            loss = loss_fn(sim, y)
+            loss = loss_fn(pred, y)
             
             if self.model.training == True:
                 if reg == 'l1':
@@ -71,7 +70,7 @@ class ModelTraining():
     def main_compute(
         self, 
         loss_fn, 
-        optimizer, 
+        lr, 
         num_epochs, 
         early_stopping=True, 
         reg=None,
@@ -79,7 +78,7 @@ class ModelTraining():
         show_log = True
         ):
         #loss_fn = nn.CrossEntropyLoss(reduction = "sum")
-        #optimizer = torch.optim.Adam(self.model.parameters(), lr = lr)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr = lr)
         
         training_loss = list()
         testing_loss = list()
@@ -288,12 +287,12 @@ class KFoldCV():
 #%%
 if __name__ == '__main__':
     # Assuming n_vox, n_stim, and n_category are defined
-    n_emb = 10000  # Example large size
-    n_stim = 20000  # Example large size
-    n_category = 1000  # Example large size
+    n_emb = 20000  # Example large size
+    n_stim = 10000  # Example large size
+    n_category = 80  # Example large size
 
     # Check for GPU
-    device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 
     # Instantiate the model and move it to GPU if available
@@ -311,8 +310,8 @@ if __name__ == '__main__':
     Design_mat = torch.randn(n_stim, n_category).to(device)  # Move data to GPU
 
     # Training loop
-    epochs = 1000
-    for epoch in range(epochs):
+    epochs = 100
+    for epoch in tqdm(range(epochs)):
         model.train()
         optimizer.zero_grad()
 
@@ -330,6 +329,7 @@ if __name__ == '__main__':
     #%%
     # After training, model.linear.weight will contain the learned weights W
     weights = model.state_dict()["linear.weight"].to('cpu').detach().numpy().copy()
+    print(weights.shape)
 
 
 # %%
