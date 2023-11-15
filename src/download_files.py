@@ -101,9 +101,11 @@ def download_and_extract_tar_gz(url, save_dir, file_name):
         
 #%%
 if __name__ == "__main__":
-    url = "https://plus.figshare.com/ndownloader/files/36806148"
-    folder = "/home1/common-data/THINGS-fMRI/"
-    dir_name = "fMRI Single Trial Responses (nifti format)"
-    download_and_extract_tar_gz(url, folder, dir_name)# %%
+    url = "http://images.cocodataset.org/annotations/annotations_trainval2014.zip"
+    folder = '/home1/data/common-data/COCO/'
+    dir_name = 'annotations'
+    os.makedirs(folder+dir_name)
+    
+    download_and_extract_zip(url, folder, dir_name)# %%
 
 # %%

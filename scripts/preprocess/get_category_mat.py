@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import json
 
 from collections import defaultdict
 import nltk
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     conditions -= 1
     #%%
     category_mat_df = pd.DataFrame(data=category_mat, columns=unique_categories, index=conditions)
-    category_mat_df.to_csv("../data/category_mat.csv")
+    category_mat_df.to_csv("../../data/category_mat.csv")
 
     # %%
     #sort labels
@@ -110,19 +111,27 @@ if __name__ == '__main__':
 
     #%%
     # manual
-    sorted_list = [
-        'person',
-        'elephant', 'zebra', 'sheep', 'mouse', 'horse', 'dog', 'cat', 'cow', 'bear', 'giraffe', 'bird', 'teddy bear',
-        'bicycle', 'motorcycle', 'bus', 'car', 'airplane', 'boat', 'train', 'truck',
-        'spoon', 'knife', 'fork', 'bowl', 'cup', 'bottle', 'wine glass',
-        'banana', 'carrot', 'apple', 'orange', 'cake', 'pizza', 'sandwich', 'hot dog', 'donut', 'broccoli',
-        'bench', 'dining table', 'chair', 'couch', 'bed', 'oven', 'toaster', 'microwave', 'sink', 'refrigerator', 'toilet', 'potted plant', 'vase',
-        'laptop', 'cell phone', 'tv', 'remote', 'keyboard', 'clock', 'hair drier',
-        'baseball bat', 'skateboard', 'skis', 'snowboard', 'sports ball', 'tennis racket', 'frisbee', 'surfboard', 'baseball glove',
-        'backpack', 'handbag', 'suitcase', 'tie', 'toothbrush', 'umbrella', 
-        'parking meter', 'kite', 'book', 'traffic light', 'stop sign', 'fire hydrant', 'scissors'
-    ]
+    #sorted_list = [
+    #    'person',
+    #    'elephant', 'zebra', 'sheep', 'mouse', 'horse', 'dog', 'cat', 'cow', 'bear', 'giraffe', 'bird', 'teddy bear',
+    #    'bicycle', 'motorcycle', 'bus', 'car', 'airplane', 'boat', 'train', 'truck',
+    #    'spoon', 'knife', 'fork', 'bowl', 'cup', 'bottle', 'wine glass',
+    #    'banana', 'carrot', 'apple', 'orange', 'cake', 'pizza', 'sandwich', 'hot dog', 'donut', 'broccoli',
+    #    'bench', 'dining table', 'chair', 'couch', 'bed', 'oven', 'toaster', 'microwave', 'sink', 'refrigerator', 'toilet', 'potted plant', 'vase',
+    #    'laptop', 'cell phone', 'tv', 'remote', 'keyboard', 'clock', 'hair drier',
+    #    'baseball bat', 'skateboard', 'skis', 'snowboard', 'sports ball', 'tennis racket', 'frisbee', 'surfboard', 'baseball glove',
+    #    'backpack', 'handbag', 'suitcase', 'tie', 'toothbrush', 'umbrella', 
+    #    'parking meter', 'kite', 'book', 'traffic light', 'stop sign', 'fire hydrant', 'scissors'
+    #]
     
+    # use the official data
+    category_mat_df = pd.read_csv("../../data/category_mat.csv", index_col=0)
+    filename = '../../data/categories.json'
+
+    with open(filename, 'r') as file:
+        data = json.load(file)
+    
+    sorted_list = [cat['name'] for cat in data]
     set_org = set(list(unique_categories))
     set_sorted = set(sorted_list)
 
@@ -130,15 +139,15 @@ if __name__ == '__main__':
     print("elements that the original doesn't have : ", list(set_sorted - set_org))
     # %%
     category_mat_df_sorted = category_mat_df.reindex(columns=sorted_list)
-    category_mat_df_sorted.to_csv("../data/category_mat.csv")
+    category_mat_df_sorted.to_csv("../../data/category_mat.csv")
     # %%
     # extract shared 515
-    shared515 = np.array(np.load("../data/shared515ids.npy"))
+    shared515 = np.array(np.load("../../data/shared515ids.npy"))
     category_mat_shared515 = category_mat_df_sorted.loc[shared515-1]
-    category_mat_shared515.to_csv('../data/category_mat_shared515.csv')
+    category_mat_shared515.to_csv('../../data/category_mat_shared515.csv')
     # %%
     # save original
     original_mat = pd.DataFrame(data=category_vectors, columns=unique_categories, index=conditions)
     original_mat = original_mat.reindex(columns=sorted_list)
-    original_mat.to_csv("../data/category_mat_original.csv")
+    original_mat.to_csv("../../data/category_mat_original.csv")
 # %%
