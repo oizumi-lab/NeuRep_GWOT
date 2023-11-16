@@ -15,7 +15,7 @@ from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_
 n_subj = 8
 roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
 
-compute_OT = True
+compute_OT = False
 
 # category data
 category_mat = pd.read_csv("../data/category_mat_shared515.csv")
@@ -86,8 +86,8 @@ for roi in roi_list:
             eps_list=[1e-5, 1e-1],
             eps_log=True,
             to_types='torch',
-            device='cuda',
-            multi_gpu=['cuda:0', 'cuda:1']
+            device='cuda:3',
+            multi_gpu=False
             )
 
         alignment = AlignRepresentations(

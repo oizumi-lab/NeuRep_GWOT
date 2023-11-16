@@ -218,10 +218,10 @@ class KFoldCV():
 #%%
 if __name__ == "__main__":
     # load the dataset
-    data = pd.read_csv('../data/behavior/sis_all.csv', index_col=0)
+    data = pd.read_csv('../data/behavior/sis_all_dissim.csv', index_col=0)
     
     # device 
-    device = "cuda:3" if torch.cuda.is_available() else "cpu"
+    device = "cuda:2" if torch.cuda.is_available() else "cpu"
 
     # Train the model
     emb_dim = 200
@@ -231,16 +231,16 @@ if __name__ == "__main__":
     lr = 0.01
     num_epochs = 100
     batch_size = 100
-    early_stopping = True
+    early_stopping = False
 
     loss_fn = nn.MSELoss(reduction="sum")
     distance_metric = "euclidean"
     
     ### cv params
     n_splits = 5
-    lamb_range = [1e-10, 100]
-    study_name = "COCO_behavior"
-    n_trials = 10
+    lamb_range = [1e-3, 1]
+    study_name = f"COCO_behavior_metric={distance_metric}"
+    n_trials = 5
 
     
     #%%
@@ -264,8 +264,8 @@ if __name__ == "__main__":
                     distance_metric=distance_metric)
     
     #cv.optimize(n_trials=n_trials)
-    lamb = cv.get_best_lamb(show_log=True)
-    #lamb=0.01
+    #lamb = cv.get_best_lamb(show_log=True)
+    lamb=0.01
     
     ### main
     main_training = MainTraining(dataset = dataset, 

@@ -42,8 +42,13 @@ data_val = data_val.replace(id_dict)
 # concatenate them
 data_all = pd.concat([data_test, data_val])
 
+#%%
+data_dissim = data_all
+data_dissim['agg_score'] = 5 - data_all['agg_score']
+
 # save
 data_all.to_csv('../data/behavior/sis_all.csv')
+data_dissim.to_csv('../data/behavior/sis_all_dissim.csv')
 #%%
 
 ### load annotation file
