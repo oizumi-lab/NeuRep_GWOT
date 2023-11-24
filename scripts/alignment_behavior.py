@@ -62,7 +62,7 @@ for roi in roi_list:
         name=f"behavior",
         embedding=behavior_emb,
         get_embedding=False,
-        metric='cosine'
+        metric='euclidean'
         #object_labels=object_labels,
         #category_name_list=new_category_name_list,
         #num_category_list=category_num_list,
@@ -89,7 +89,7 @@ for roi in roi_list:
     alignment = AlignRepresentations(
         config=opt_config, 
         representations_list=representations,
-        metric="cosine",
+        metric="euclidean",
         main_results_dir="../results/gw_alignment/behavior/",
         data_name=f"NSD_{roi}_vs_behavior", 
         )

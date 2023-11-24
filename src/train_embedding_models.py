@@ -26,7 +26,8 @@ import ot
 from sklearn.metrics import pairwise_distances
 
 from src.embedding_model import EmbeddingModel, ModelTraining
-#from GW_methods.src.align_representations import Representation, VisualizationConfig, AlignRepresentations, OptimizationConfig
+from GW_methods.src.align_representations import Representation, VisualizationConfig, AlignRepresentations, OptimizationConfig
+from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
 #%%
 
@@ -221,7 +222,7 @@ if __name__ == "__main__":
     data = pd.read_csv('../data/behavior/sis_all_dissim.csv', index_col=0)
     
     # device 
-    device = "cuda:2" if torch.cuda.is_available() else "cpu"
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # Train the model
     emb_dim = 200
@@ -265,7 +266,7 @@ if __name__ == "__main__":
     
     #cv.optimize(n_trials=n_trials)
     #lamb = cv.get_best_lamb(show_log=True)
-    lamb=0.01
+    lamb=0.0001
     
     ### main
     main_training = MainTraining(dataset = dataset, 
@@ -292,4 +293,29 @@ plt.show()
 plt.hist(np.max(np.abs(embeddings), axis=0))
 plt.show()
 #
+# %%
+### show simmmat
+embeddings = np.load(f"../data/behavior/embeddings.npy")
+category_mat = pd.read_csv('../data/behavior/category_mat_behavior.csv', index_col=0)
+object_labels, category_idx_list, category_num_list, new_category_name_list = get_category_data(category_mat)
+
+behav = Representation(
+        name=f"behavior",
+        embedding=embeddings,
+        metric='euclidean',
+        object_labels=object_labels,
+        category_name_list=new_category_name_list,
+        num_category_list=category_num_list,
+        category_idx_list=category_idx_list,
+        func_for_sort_sim_mat=sort_matrix_with_categories
+    )
+
+vis_config = VisualizationConfig(
+    cmap='rocket',
+    draw_category_line=True, 
+    #category_line_color='red', 
+    category_line_alpha=0.1, 
+    category_line_style='-'
+    )
+behav.show_sim_mat(sim_mat_format="sorted", visualization_config=vis_config)
 # %%

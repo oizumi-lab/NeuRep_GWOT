@@ -7,10 +7,11 @@ import pandas as pd
 import pickle as pkl
 import torch
 import random
+import itertools
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from src.utils import sample_participants, split_lists
+from src.utils import sample_participants, split_lists, show_matrix
 from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
 from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
@@ -19,24 +20,27 @@ n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
-n_sample = 5
+n_sample = 2
 
 compute_OT = False
 
 #%%
-
+# subjects groups for each seed
 groups_list = []
 for seed in range(n_sample):
     subj_list = sample_participants(n_subj, n_subj, seed)
     groups = split_lists(subj_list, n_groups)
     groups_list.append(groups)
     
+# roi pairs
+roi_pairs = list(itertools.combinations(roi_list, 2))
+
 # category data
 category_mat = pd.read_csv("../data/category_mat_shared515.csv", index_col=0)
 object_labels, category_idx_list, category_num_list, new_category_name_list = get_category_data(category_mat)
     
 #%%
-for roi in roi_list:
+for seed, groups in enumerate(groups_list):
     ### set dataframes
     top_k_list = [1, 3, 5]
     top_k_accuracy = pd.DataFrame()
@@ -48,10 +52,11 @@ for roi in roi_list:
     df_rsa = pd.DataFrame()
     df_gwd = pd.DataFrame()
     
-    for seed, groups in enumerate(groups_list):
-        
+    for roi_pair in roi_pairs:
+        roi1, roi2 = roi_pair
         representations = []
         for j, group in enumerate(groups):
+            roi = roi_pair[j]
             RDMs = []
             for i in group:
                 RDM = np.load(f"/home1/data/common-data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
@@ -60,7 +65,7 @@ for roi in roi_list:
             mean_RDM = np.mean(RDMs, axis=0)
 
             representation = Representation(
-                name=f"Group{j+1}_{roi}",
+                name=f"{roi}",
                 sim_mat=mean_RDM,
                 metric="euclidean",
                 get_embedding=False,
@@ -75,17 +80,37 @@ for roi in roi_list:
         
         main_results_dir = "../results/gw_alignment/"
         init_mat_plan = 'random'
-        data_name = f"NSD_within_{roi}_seed{seed}"
+        data_name = f"NSD_across_roi_seed{seed}"
         
+        device = 'cuda:1'
+
+        if "cuda" in device:
+            sinkhorn_method = "sinkhorn_log" # please choose the method of sinkhorn implemented by POT (URL : https://pythonot.github.io/gen_modules/ot.bregman.html#id87). For using GPU, "sinkhorn_log" is recommended.
+            data_type= "float"
+            to_types='torch'
+            multi_gpu = True # This parameter is only designed for "torch". # "True" : all the GPU installed in your environment are used, "list (e.g.[0,2,3])"" : cuda:0,2,3, and "False" : single gpu will be used.
+
+        elif device == "cpu":
+            sinkhorn_method = "sinkhorn"
+            data_type = "double"
+            to_types = 'numpy'
+            multi_gpu = False
+            
         opt_config = OptimizationConfig(
             init_mat_plan=init_mat_plan,
             db_params={"drivername": "sqlite"},
             num_trial=100,
             n_iter=1, 
-            max_iter=200,
+            max_iter=500,
             sampler_name="tpe", 
             eps_list=[1e-4, 1e-2],
             eps_log=True,
+            device=device,
+            to_types=to_types,
+            data_type=data_type,
+            sinkhorn_method=sinkhorn_method,
+            multi_gpu=multi_gpu
+    
         )
         
         alignment = AlignRepresentations(
@@ -106,13 +131,14 @@ for roi in roi_list:
             #cbar_label_size=40,
             )
 
-        os.makedirs(f"../results/figs/{roi}/seed{seed}/", exist_ok=True)
+        fig_dir = f"../results/figs/across_roi/seed{seed}/"
+        os.makedirs(fig_dir, exist_ok=True)
 
         alignment.show_sim_mat(
             sim_mat_format="sorted",
             visualization_config=vis_config, 
             show_distribution=False,
-            fig_dir=f"../results/figs/{roi}/seed{seed}/"
+            fig_dir=fig_dir
             )
         
         alignment.RSA_get_corr()
@@ -141,7 +167,7 @@ for roi in roi_list:
             OT_format="sorted",
             return_data=True,
             visualization_config=vis_config_OT,
-            fig_dir=f"../results/figs/{roi}/seed{seed}/",
+            fig_dir=fig_dir,
             save_dataframe=True
             )
         
@@ -173,7 +199,7 @@ for roi in roi_list:
 
         alignment.show_optimization_log(
             visualization_config=vis_config_log, 
-            fig_dir=f"../results/figs/{roi}/seed{seed}/"
+            fig_dir=fig_dir
             )
 
         ## Calculate the accuracy of the optimized OT matrix
@@ -184,11 +210,11 @@ for roi in roi_list:
 
         alignment.plot_accuracy(
             eval_type="ot_plan", 
-            fig_dir=f"../results/figs/{roi}/seed{seed}/", 
+            fig_dir=fig_dir, 
             fig_name="accuracy_ot_plan.png"
             )
         
-        top_k_accuracy = pd.concat([top_k_accuracy, alignment.top_k_accuracy])
+        top_k_accuracy = pd.concat([top_k_accuracy, alignment.top_k_accuracy], axis=1)
         
         # category level
         eval_mat = np.matmul(category_mat.values, category_mat.values.T)
@@ -201,17 +227,30 @@ for roi in roi_list:
         
         alignment.plot_accuracy(
             eval_type="ot_plan", 
-            fig_dir=f"../results/figs/{roi}/seed{seed}/", 
+            fig_dir=fig_dir, 
             fig_name="category_level_accuracy_ot_plan.png"
             )
         
-        cat_accuracy = pd.concat([cat_accuracy, alignment.top_k_accuracy])
+        cat_accuracy = pd.concat([cat_accuracy, alignment.top_k_accuracy], axis=1)
+        
+        #top_k_accuracy = top_k_accuracy.T
+        #top_k_accuracy.index.name = 'pair_name'
+        #top_k_accuracy_all = pd.concat([top_k_accuracy_all, top_k_accuracy], axis=0)
+        
+        #cat_accuracy = cat_accuracy.T
+        #cat_accuracy.index.name = 'pair_name'
+        #cat_accuracy_all = pd.concat([cat_accuracy_all, cat_accuracy], axis=0)
         
     # save data
-    save_dir = f'../results/gw_alignment/within{roi}/'
+    save_dir = f'../results/gw_alignment/across_roi/seed{seed}/'
     os.makedirs(save_dir, exist_ok=True)
-
+    
+    top_k_accuracy = top_k_accuracy.T
+    top_k_accuracy.index.name = 'pair_name'
     top_k_accuracy.to_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
+    
+    cat_accuracy = cat_accuracy.T
+    cat_accuracy.index.name = 'pair_name'
     cat_accuracy.to_csv(os.path.join(save_dir, 'category_accuracy.csv'))
     
     df_rsa = df_rsa.T
@@ -222,169 +261,72 @@ for roi in roi_list:
     df_gwd.index.name = 'pair_name'
     df_gwd.to_csv(os.path.join(save_dir, 'gw_distance.csv'))
     
-# %%
+#%%
+# concatenate results
+top_k_accuracy_all = pd.DataFrame()
+cat_accuracy_all = pd.DataFrame()
+rsa_corr_all = pd.DataFrame()
+gwd_all = pd.DataFrame()
 
-
-### make summary figures
-
-# top k acc
-top_k_list = [1, 3, 5]
-for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
-    df_acc = pd.read_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
+for seed in range(n_sample):
+    main_results_dir = f'../results/gw_alignment/across_roi/seed{seed}/'
     
-    # for each k
-    #for k in top_k_list:
-    #    df_filtered = df_acc[df_acc['top_n'] == k]
-    pair_name = f'Group1_{roi}_vs_Group2_{roi}'
+    top_k_accuracy = pd.read_csv(os.path.join(main_results_dir, 'top_k_accuracy.csv'))
+    cat_accuracy = pd.read_csv(os.path.join(main_results_dir, 'category_accuracy.csv'))
+    rsa_corr = pd.read_csv(os.path.join(main_results_dir, 'rsa_correlation.csv'))
+    gwd = pd.read_csv(os.path.join(main_results_dir, 'gw_distance.csv'))
     
-    # plot
-    labels = [str(n) for n in top_k_list]
+    top_k_accuracy_all = pd.concat([top_k_accuracy_all, top_k_accuracy], axis=0)
+    cat_accuracy_all = pd.concat([cat_accuracy_all, cat_accuracy], axis=0)
+    rsa_corr_all = pd.concat([rsa_corr_all, rsa_corr], axis=0)
+    gwd_all = pd.concat([gwd_all, gwd], axis=0)
 
-    palette = sns.color_palette("bright", n_colors=len(labels))
-
-    plt.figure(figsize=(6, 6))
-    sns.swarmplot(x='top_n', y=pair_name, data=df_acc, palette=palette, size=8)
-    
-    plt.xlabel('Top-k', size=35)
-    plt.ylabel('Matching Rate', size=35)
-    plt.xticks(ticks=[0, 1, 2], labels=labels)
-    plt.xticks(size=30)
-    plt.yticks(size=30)
-    # ylim [0,100]
-    plt.ylim([-5, 105])
-    plt.tight_layout()
-    plt.title(f'{roi}', size=35)
-    plt.savefig(f"../results/figs/{roi}/top_k_accuracy_swarmplot.png")
-    plt.show()
+# save
+save_dir = f'../results/gw_alignment/across_roi/'
+os.makedirs(save_dir, exist_ok=True)
+top_k_accuracy_all.to_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
+cat_accuracy_all.to_csv(os.path.join(save_dir, 'category_accuracy.csv'))
+rsa_corr_all.to_csv(os.path.join(save_dir, 'rsa_correlation.csv'))
+gwd_all.to_csv(os.path.join(save_dir, 'gw_distance.csv'))
 
 #%%
-# top1
-top_k = 1
-all_data = pd.DataFrame()
-for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
-    df_acc = pd.read_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
+### show summary figure
     
-    pair_name = f'Group1_{roi}_vs_Group2_{roi}'
-    
-    df_acc = df_acc[df_acc['top_n'] == top_k]
-    data = [[pair_name, acc] for acc in df_acc[pair_name]]
-    df = pd.DataFrame(data=data, columns=['pair_name', 'accuracy'])
-    
-    all_data = pd.concat([all_data, df], axis=0)
-
-# plot
-labels = roi_list
-
-palette = sns.color_palette("bright", n_colors=len(labels))
-
-plt.figure(figsize=(6, 6))
-sns.swarmplot(x='pair_name', y='accuracy', data=all_data, palette=palette, size=8)
-
-plt.xlabel('roi', size=35)
-plt.ylabel(f'top {top_k} matching rate', size=35)
-plt.xticks(ticks=range(len(labels)), labels=labels)
-plt.xticks(size=15)
-plt.yticks(size=30)
-# ylim [0,100]
-plt.ylim([-5, 105])
-plt.tight_layout()
-plt.savefig(f"../results/figs/within_roi/top_{top_k}_accuracy_swarmplot.png")
-plt.show()
-
 #%%
-# top1
-top_k = 1
-all_data = pd.DataFrame()
-for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
-    df_acc = pd.read_csv(os.path.join(save_dir, 'category_accuracy.csv'))
-    
-    pair_name = f'Group1_{roi}_vs_Group2_{roi}'
-    
-    df_acc = df_acc[df_acc['top_n'] == top_k]
-    data = [[pair_name, acc] for acc in df_acc[pair_name]]
-    df = pd.DataFrame(data=data, columns=['pair_name', 'accuracy'])
-    
-    all_data = pd.concat([all_data, df], axis=0)
-
-# plot
-labels = roi_list
-
-palette = sns.color_palette("bright", n_colors=len(labels))
-
-plt.figure(figsize=(6, 6))
-sns.swarmplot(x='pair_name', y='accuracy', data=all_data, palette=palette, size=8)
-
-plt.xlabel('roi', size=35)
-plt.ylabel(f'top {top_k} matching rate', size=35)
-plt.xticks(ticks=range(len(labels)), labels=labels)
-plt.xticks(size=15)
-plt.yticks(size=30)
-# ylim [0,100]
-plt.ylim([-5, 105])
-plt.tight_layout()
-plt.savefig(f"../results/figs/within_roi/category_top_{top_k}_accuracy_swarmplot.png")
-plt.show()
-
-#%%
-# rsa
-all_data = pd.DataFrame()
-for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
-    df_acc = pd.read_csv(os.path.join(save_dir, 'rsa_correlation.csv'), index_col=0)
-    
-    pair_name = f'Group1_{roi}_vs_Group2_{roi}'
-    all_data = pd.concat([all_data, df_acc], axis=0)
-
-
-# plot
-labels = roi_list
-
-palette = sns.color_palette("bright", n_colors=len(labels))
-
-plt.figure(figsize=(6, 6))
-sns.swarmplot(x='pair_name', y='correlation', data=all_data, palette=palette, size=8)
-
-plt.xlabel('roi', size=35)
-plt.ylabel('RSA correlation', size=35)
-plt.xticks(ticks=range(len(labels)), labels=labels)
-plt.xticks(size=15)
-plt.yticks(size=30)
-# ylim [0,100]
-plt.ylim([0, 1])
-plt.tight_layout()
-plt.savefig(f"../results/figs/within_roi/rsa_swarmplot.png")
-plt.show()
-# %%
-
-# gwd
-all_data = pd.DataFrame()
-for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
-    df_acc = pd.read_csv(os.path.join(save_dir, 'gw_distance.csv'), index_col=0)
-    
-    pair_name = f'Group1_{roi}_vs_Group2_{roi}'
-    all_data = pd.concat([all_data, df_acc], axis=0)
-
-
-# plot
-labels = roi_list
-
-palette = sns.color_palette("bright", n_colors=len(labels))
-
-plt.figure(figsize=(6, 6))
-sns.swarmplot(x='pair_name', y='gwd', data=all_data, palette=palette, size=8)
-
-plt.xlabel('roi', size=35)
-plt.ylabel('GWD', size=35)
-plt.xticks(ticks=range(len(labels)), labels=labels)
-plt.xticks(size=15)
-plt.yticks(size=15)
-# ylim [0,100]
-plt.ylim([0, 0.02])
-plt.tight_layout()
-plt.savefig(f"../results/figs/within_roi/gwd_swarmplot.png")
-plt.show()
+#main_results_dir = f'../results/gw_alignment/across_roi/'
+#fig_dir = f"../results/figs/across_roi/"
+#
+## top k acc
+#df = pd.read_csv(os.path.join(main_results_dir, 'top_k_accuracy.csv'))
+#top_k = 1
+#title = f'top{top_k} matching rate'
+#file_name = f'top_{top_k}_accuracy'
+#
+#show_matrix(df, col_name=str(top_k), title=title, save_dir=fig_dir, file_name=file_name, first_items=roi_list, second_items=roi_list)
+## %%
+## category
+#df = pd.read_csv(os.path.join(main_results_dir, 'category_accuracy.csv')) 
+#top_k = 1
+#title = f'category level accuracy'
+#file_name = f'category_top_{top_k}_accuracy'
+#
+#show_matrix(df, col_name=str(top_k), title=title, save_dir=fig_dir, file_name=file_name, first_items=roi_list, second_items=roi_list)
+#
+##%%
+## rsa
+#df = pd.read_csv(os.path.join(main_results_dir, 'rsa_correlation.csv'))
+#col_name = 'correlation'
+#title = 'RSA correlation'
+#file_name = f'rsa_all_pairs'
+#
+#show_matrix(df, col_name=col_name, title=title, save_dir=fig_dir, file_name=file_name, first_items=roi_list, second_items=roi_list)
+#
+## %%
+## gwd
+#df = pd.read_csv(os.path.join(main_results_dir, 'gw_distance.csv'))
+#col_name = 'gwd'
+#title = 'GWD'
+#file_name = f'gwd_all_pairs'
+#
+#show_matrix(df, col_name=col_name, title=title, save_dir=fig_dir, file_name=file_name, first_items=roi_list, second_items=roi_list)
 # %%
