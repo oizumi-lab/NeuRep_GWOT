@@ -73,14 +73,15 @@ def torch_fix_seed(seed=42):
 
 # 使用データの定義
 class GWD_Dataset():
-    def __init__(self, model_name, save_path, dataset_path, target="conv", device = 'cuda:0') -> None:
+    def __init__(self, model_name, save_path, dataset_path, layer_name=None, target="conv", device = 'cuda:0') -> None:
         self.model_name = model_name
         self.device = device
         self.target = target
         self.save_path = save_path
-        self.emb_path = os.path.join(self.save_path, 'emb', self.model_name.lower() + '_' + self.target + '.pt')
-        self.sim_mat_path = os.path.join(self.save_path, 'sim_mat', self.model_name.lower() + '_' + self.target + '.pt')
-        self.all_images_path = os.path.join(self.save_path, 'all_images', self.model_name.lower() + '_' + self.target + '.pt')
+        self.layer_name = layer_name
+        self.emb_path = os.path.join(self.save_path, 'emb', self.model_name.lower() + '_' + str(self.layer_name) + '_' + self.target + '.pt')
+        self.sim_mat_path = os.path.join(self.save_path, 'sim_mat', self.model_name.lower() + '_' + str(self.layer_name) + '_' + self.target + '.pt')
+        self.all_images_path = os.path.join(self.save_path, 'all_images', self.model_name.lower() + '_' + str(self.layer_name) + '_' + self.target + '.pt')
         
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
@@ -205,7 +206,7 @@ class GWD_Dataset():
         loader = DataLoader(dataset_now, batch_size = 32, num_workers = 8, shuffle = False)
 
         for img, lab in tqdm(loader):
-            feat1 = self._extract_latent(img.to(self.device))
+            feat1 = self._extract_latent(img.to(self.device), layer_name = self.layer_name)
             
             feat1 = feat1.reshape(len(feat1), -1)
             
@@ -218,7 +219,10 @@ class GWD_Dataset():
         return feats, label
 
 
-    def _extract_latent(self, img):
+    def _extract_latent(self, img, layer_name = None):
+        '''
+        extract latent activity of a layer from model 
+        '''
         with torch.no_grad():
             if 'imagenet1k' in self.model_name.lower():
                 return_dict = self.model.config.use_return_dict
@@ -227,25 +231,53 @@ class GWD_Dataset():
                     pixel_values = img,
                     head_mask=None,
                     output_attentions=None,
-                    output_hidden_states=None,
+                    output_hidden_states=True,
                     interpolate_pos_encoding=None,
                     return_dict=return_dict,
                 )
-
-                batch_feat = outputs[0][:,0,:]
+                
+                if layer_name is None:
+                    last_hidden_state = outputs.last_hidden_state.detach()
+                    batch_feat = last_hidden_state[:,0,:] 
+                else:
+                    print(len(outputs.hidden_states))
+                    hidden_state = outputs.hidden_states[layer_name]
+                    batch_feat = hidden_state[:,0,:] 
             
             elif 'imagenet21k' in self.model_name.lower():
-                outputs = self.model(img)
-                last_hidden_state = outputs.last_hidden_state.detach()
-                batch_feat = last_hidden_state[:,0,:]
+                return_dict = self.model.config.use_return_dict
+                
+                outputs = self.model(
+                    pixel_values = img,
+                    head_mask=None,
+                    output_attentions=None,
+                    output_hidden_states=True,
+                    interpolate_pos_encoding=None,
+                    return_dict=return_dict,
+                    )
+                
+                if layer_name is None:
+                    last_hidden_state = outputs.last_hidden_state.detach()
+                    batch_feat = last_hidden_state[:,0,:] 
+                else:
+                    print(len(outputs.hidden_states))
+                    hidden_state = outputs.hidden_states[layer_name]
+                    batch_feat = hidden_state[:,0,:] 
                 
             elif 'alexnet' in self.model_name.lower():
                 if self.target == 'conv':
-                    batch_feat = self.model.features(img).detach()  
+                    if layer_name is None:
+                        batch_feat = self.model.features(img).detach()
+                    else:
+                        batch_feat = self.model.features[:layer_name](img).detach()
             
             elif 'vgg19' in self.model_name.lower():
                 if self.target == 'conv':
-                    batch_feat = self.model.features(img).detach()
+                    if layer_name is None:
+                        batch_feat = self.model.features(img).detach()
+                    else:
+                        batch_feat = self.model.features[:layer_name](img).detach()
+                    
 
             elif 'clip' in self.model_name.lower():
                 # 'ViT-L-14', 'commonpool_xl_laion_s13b_b90k'
@@ -264,6 +296,9 @@ class GWD_Dataset():
             
         torch.cuda.empty_cache()
         gc.collect()
+        
+        #print(self.model)
+        #print(batch_feat.shape)
         return batch_feat
 
     def extract(self):

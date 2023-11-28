@@ -11,22 +11,33 @@ from src.load_img import GWD_Dataset
 save_path = '../../data/models/shared515'
 dataset_path = '/home1/data/common-data/natural-scenes-dataset/nsddata_stimuli/stimuli/nsd/shared_515'
 
+'''
+layer numbers
+vit : 13
+AlexNet : 5
+VGG : 10
 
+'''
 model_list = [
     'AlexNet', 
     'VGG19',
-    'CLIP_B16_OpenAI',
-    'CLIP_B16_datacomp_l_s1b_b8k',
-    'CLIP_B16_datacomp_xl_s13b_b90k',
-    'CLIP_B16_laion2B-s34B-b88K', 
-    # 'CLIP_L14_commonpool_xl_laion_s13b_b90k', 
+    #'CLIP_B16_OpenAI',
+    #'CLIP_B16_datacomp_l_s1b_b8k',
+    #'CLIP_B16_datacomp_xl_s13b_b90k',
+    #'CLIP_B16_laion2B-s34B-b88K', 
     'ViT_B16_ImageNet1K', 
     'ViT_B16_ImageNet21K',
 ]
 
+layer_numbers = {'AlexNet': 5, 'VGG19': 10, 'ViT_B16_ImageNet1K': 13, 'ViT_B16_ImageNet21K': 13}
+
 for model_name in model_list:
-    test = GWD_Dataset(model_name=model_name, save_path=save_path, dataset_path=dataset_path)
-    cosine_dis_sim, label = test.extract()
+    layer_number = layer_numbers[model_name]
+    
+    for layer in range(layer_number):
+        test = GWD_Dataset(model_name=model_name, save_path=save_path, dataset_path=dataset_path, layer_name=layer)
+        #test._extract_feat_from_dataset(test.dataset)
+        cosine_dis_sim, label = test.extract()
 
 #%%
 ### as label is not in the order of image numbers, I need to sort indices 
@@ -65,7 +76,10 @@ np.save('../../data/models/shared515/index_list', index_list)
 # %%
 ### load the saved RDMs and sort them 
 for model in model_list:
-    sim_mat = torch.load(os.path.join(save_path, 'sim_mat', f'{model.lower()}_conv.pt'))
-    sorted_sim_mat = sort_2d_array(sim_mat, index_list, index_list)
-    torch.save(sorted_sim_mat, os.path.join(save_path, 'sim_mat', f'sorted_{model.lower()}_conv.pt'))
+    layer_name = layer_numbers[model]
+    
+    for layer in range(layer_name):
+        sim_mat = torch.load(os.path.join(save_path, 'sim_mat', f'{model.lower()}_{str(layer)}_conv.pt'))
+        sorted_sim_mat = sort_2d_array(sim_mat, index_list, index_list)
+        torch.save(sorted_sim_mat, os.path.join(save_path, 'sim_mat', f'sorted_{model.lower()}_{str(layer)}_conv.pt'))
 # %%

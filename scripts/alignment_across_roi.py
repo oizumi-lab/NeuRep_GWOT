@@ -20,7 +20,7 @@ n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
-n_sample = 2
+n_sample = 5
 
 compute_OT = False
 
