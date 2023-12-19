@@ -19,14 +19,16 @@ n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
-n_sample = 5
+n_sample = 10
+seed_list = range(n_sample)
+#seed_list = range(5, 10)
 
 compute_OT = False
 
 #%%
 
 groups_list = []
-for seed in range(n_sample):
+for seed in seed_list:
     subj_list = sample_participants(n_subj, n_subj, seed)
     groups = split_lists(subj_list, n_groups)
     groups_list.append(groups)
@@ -48,7 +50,8 @@ for roi in roi_list:
     df_rsa = pd.DataFrame()
     df_gwd = pd.DataFrame()
     
-    for seed, groups in enumerate(groups_list):
+    for seed_id, groups in enumerate(groups_list):
+        seed = seed_list[seed_id]
         
         representations = []
         for j, group in enumerate(groups):
@@ -86,6 +89,9 @@ for roi in roi_list:
             sampler_name="tpe", 
             eps_list=[1e-4, 1e-2],
             eps_log=True,
+            device='cuda:2',
+            to_types='torch',
+            multi_gpu=False
         )
         
         alignment = AlignRepresentations(
@@ -195,7 +201,7 @@ for roi in roi_list:
         alignment.calc_accuracy(
             top_k_list=top_k_list, 
             eval_type="ot_plan",
-            ot_to_evaluate=OT_sorted[0],
+            #ot_to_evaluate=OT_sorted[0],
             eval_mat = eval_mat
         )
         

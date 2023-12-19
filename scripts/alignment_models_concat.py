@@ -19,7 +19,7 @@ n_subj = 8
 roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
 
 compute_OT = True
-z_transform = True
+z_transform = False
 
 # category data
 category_mat = pd.read_csv("../data/category_mat_shared515.csv", index_col=0)

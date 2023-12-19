@@ -229,16 +229,16 @@ if __name__ == "__main__":
     image_num = 10000
     
     # Define the optimizer (e.g., Adam)
-    lr = 0.01
+    lr = 0.001
     num_epochs = 100
     batch_size = 100
     early_stopping = False
 
-    loss_fn = nn.MSELoss(reduction="sum")
+    loss_fn = nn.MSELoss()
     distance_metric = "euclidean"
     
     ### cv params
-    n_splits = 5
+    n_splits = 10
     lamb_range = [1e-3, 1]
     study_name = f"COCO_behavior_metric={distance_metric}"
     n_trials = 5
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     
     #cv.optimize(n_trials=n_trials)
     #lamb = cv.get_best_lamb(show_log=True)
-    lamb=0.0001
+    lamb=0.001
     
     ### main
     main_training = MainTraining(dataset = dataset, 
@@ -315,7 +315,11 @@ vis_config = VisualizationConfig(
     draw_category_line=True, 
     #category_line_color='red', 
     category_line_alpha=0.1, 
-    category_line_style='-'
+    category_line_style='-',
     )
-behav.show_sim_mat(sim_mat_format="sorted", visualization_config=vis_config)
+behav.show_sim_mat(
+    sim_mat_format="sorted",
+    visualization_config=vis_config,
+    ticks='category'
+    )
 # %%

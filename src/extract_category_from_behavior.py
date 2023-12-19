@@ -43,7 +43,7 @@ data_val = data_val.replace(id_dict)
 data_all = pd.concat([data_test, data_val])
 
 #%%
-data_dissim = data_all
+data_dissim = data_all.copy()
 data_dissim['agg_score'] = 5 - data_all['agg_score']
 
 # save

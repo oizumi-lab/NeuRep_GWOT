@@ -10,23 +10,28 @@ import matplotlib.pyplot as plt
 #%%
 # load results
 data_dir = '../results/gw_alignment/'
-roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC']
 
 all_data = pd.DataFrame(columns=['roi1', 'roi2', 'rsa_corr', 'top1_acc', 'category_top1', 'gwd'])
+df_for_plot = pd.DataFrame(columns=['roi', 'rsa_corr', 'top1_acc', 'category_top1', 'gwd'])
 
 # within roi
 for roi in roi_list:
     df_rsa = pd.read_csv(data_dir+f'within{roi}/rsa_correlation.csv')
     rsa_corr = df_rsa['correlation'].mean()
+    rsa_list = df_rsa['correlation'].values.tolist()
     
     df_gwd = pd.read_csv(data_dir+f'within{roi}/gw_distance.csv')
     gwd = df_gwd['gwd'].mean()
+    gwd_list = df_gwd['gwd'].values.tolist()
     
     df_acc = pd.read_csv(data_dir+f'within{roi}/top_k_accuracy.csv')
     top1_acc = df_acc[df_acc['top_n'] == 1].iloc[:, 1].mean()
+    top1_acc_list = df_acc[df_acc['top_n'] == 1].iloc[:, 1].values.tolist()
     
     df_category = pd.read_csv(data_dir+f'within{roi}/category_accuracy.csv')
     category_top1 = df_category[df_category['top_n'] == 1].iloc[:, 1].mean()
+    category_top1_list = df_category[df_category['top_n'] == 1].iloc[:, 1].values.tolist()
     
     data = {
         'roi1': roi,
@@ -37,9 +42,39 @@ for roi in roi_list:
         'gwd': gwd
         }
     
+    data_list = {
+        'roi': [roi]*len(rsa_list),
+        'rsa_corr': rsa_list,
+        'top1_acc': top1_acc_list,
+        'category_top1': category_top1_list,
+        'gwd': gwd_list
+        }
+    
     all_data = all_data.append(data, ignore_index=True)
+    df_for_plot = pd.concat([df_for_plot, pd.DataFrame(data_list)], ignore_index=True)
 #%%
-
+# within roi
+# sworm plot
+fig_dir = '../results/figs/within_roi/'
+palette = sns.color_palette('bright', n_colors=5)
+for result in ['rsa_corr', 'top1_acc', 'category_top1', 'gwd']:
+    plt.figure(figsize=(8, 8))
+    plt.style.use('seaborn-v0_8-darkgrid')
+    sns.swarmplot(x='roi', y=result, data=df_for_plot, palette=palette, size=8)
+    #plt.title(result.replace('_', ' '))
+    plt.xticks(ticks=range(len(roi_list)), labels=roi_list)
+    plt.xlabel('roi', size=35)
+    plt.ylabel(result.replace('_', ' '), size=30)
+    plt.xticks(size=30)
+    plt.yticks(size=30)
+    if result in ['rsa_corr']:
+        plt.ylim(0, 1)
+    elif result in ['top1_acc', 'category_top1']:
+        plt.ylim(-5, 100)
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(fig_dir+f'{result}_swarmplot.png')
+#%%
 # across roi
 df_rsa = pd.read_csv(data_dir+f'across_roi/rsa_correlation.csv')
 av_rsa_corr = df_rsa.groupby('pair_name')['correlation'].mean().rename('rsa_corr')
@@ -68,6 +103,9 @@ fig_dir = '../results/figs/across_roi/'
 for result in result_list:
     # get the matrix from the dataframe and make it symmetric
     matrix = all_data.pivot(index='roi1', columns='roi2', values=result).fillna(0)
+    
+    # sort the index and columns in the order of roi_list
+    matrix = matrix.loc[roi_list, roi_list]
     
     # make the matrix symmetric
     matrix = matrix + matrix.T - np.diag(np.diag(matrix))
