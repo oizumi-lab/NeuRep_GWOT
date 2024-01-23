@@ -16,11 +16,14 @@ from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_
 
 #%%
 n_subj = 8
-roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+roi_list = ['aVTC', 'pVTC', 'v3', 'v2', 'v1' ] #['pVTC', 'aVTC', 'v1', 'v2', 'v3'],
+device = 'cuda:0'
 
-compute_OT = True
+compute_OT = False
 z_transform = False
 layer_wise = False
+
+init_mat_plan = 'diag'
 
 # category data
 category_mat = pd.read_csv("../data/category_mat_shared515.csv", index_col=0)
@@ -77,8 +80,8 @@ for roi in roi_list:
         #'CLIP_B16_datacomp_xl_s13b_b90k',
         #'CLIP_B16_laion2B-s34B-b88K', 
         # 'CLIP_L14_commonpool_xl_laion_s13b_b90k', 
-        'ViT_B16_ImageNet1K', 
-        #'ViT_B16_ImageNet21K',
+        #'ViT_B16_ImageNet1K', 
+        'ViT_B16_ImageNet21K',
     ]
 
     layer_numbers = {'AlexNet': 5, 'VGG19': 10, 'ViT_B16_ImageNet1K': 13, 'ViT_B16_ImageNet21K': 13, 'CLIP_B16_OpenAI': 12}
@@ -114,20 +117,19 @@ for roi in roi_list:
             representations = [fMRI, model]
 
             main_results_dir = f"../results/gw_alignment/models/{'ztransform/' if z_transform else ''}"
-            init_mat_plan = 'random'
             data_name = f"NSD_{roi}_vs_{model_name}_{layer}{'_ztransform' if z_transform else ''}"
 
             opt_config = OptimizationConfig(
                 init_mat_plan=init_mat_plan,
                 db_params={"drivername": "sqlite"},
-                num_trial=100,
+                num_trial=90,
                 n_iter=1, 
                 max_iter=1000,
                 sampler_name="tpe", 
                 eps_list=[1e-5, 1e-1],#[1e-10, 1]
                 eps_log=True,
                 to_types='torch',
-                device='cuda:0',
+                device=device,
                 multi_gpu=False
                 )
 
@@ -144,13 +146,17 @@ for roi in roi_list:
                 figsize=(8, 6), 
                 #title_size = 15, 
                 cmap = "rocket_r",
-                #cbar_ticks_size=30,
-                #font = "Arial",
-                #cbar_label="Dissimilarity",
-                #cbar_label_size=40,
+                cbar_ticks_size=30,
+                font = "Arial",
+                cbar_label="Dissimilarity",
+                cbar_label_size=40,
+                xlabel=f"515 images",
+                xlabel_size = 35,
+                ylabel=f"515 images",
+                ylabel_size = 35,
                 )
 
-            fig_dir = f"../results/figs/{roi}/models/{model_name}/layer{layer}/{'ztransform/' if z_transform else ''}"
+            fig_dir = f"../results/figs/{roi}/models/{model_name}/layer{layer}/{init_mat_plan}{'ztransform/' if z_transform else ''}"
             os.makedirs(fig_dir, exist_ok=True)
 
             alignment.show_sim_mat(
@@ -165,20 +171,27 @@ for roi in roi_list:
             
 
             #%%
+            if model_name in ['AlexNet', 'VGG19']:
+                model_name_for_vis = model_name
+            elif model_name == 'ViT_B16_ImageNet1K':
+                model_name_for_vis = 'ViT'
+            elif model_name == 'CLIP_B16_OpenAI':
+                model_name_for_vis = 'CLIP'
+            
             vis_config_OT = VisualizationConfig(
                 figsize=(8, 6), 
                 #title_size = 15, 
                 cmap = "rocket_r",
-                #cbar_ticks_size=30,
-                #font = "Arial",
-                #cbar_label="Probability",
-                #cbar_label_size=40,
+                cbar_ticks_size=30,
+                font = "Arial",
+                cbar_label="Probability",
+                cbar_label_size=40,
                 #color_labels = new_color_order,
                 #color_label_width = 5,
-                #xlabel=f"93 colors of {name_list[0]}",
-                #xlabel_size = 40,
-                #ylabel=f"93 colors of {name_list[1]}",
-                #ylabel_size = 40,
+                xlabel=f"515 images of {roi}",
+                xlabel_size = 35,
+                ylabel=f"515 images of {model_name_for_vis}",
+                ylabel_size = 35,
                 )
 
             OT_sorted = alignment.gw_alignment(
@@ -204,16 +217,16 @@ for roi in roi_list:
 
             vis_config_log = VisualizationConfig(
                 figsize=(8, 6), 
-                #title_size = 15, 
-                #cbar_ticks_size=30,
-                #font = "Arial",
-                #fig_ext="svg",
-                #xlabel_size=35,
-                #xticks_size=30,
-                #xticks_rotation=0,
-                #ylabel_size=35,
-                #yticks_size=30,
-                #cbar_label_size=30,
+                title_size = 10, 
+                cbar_ticks_size=30,
+                font = "Arial",
+                fig_ext="svg",
+                xlabel_size=35,
+                xticks_size=30,
+                xticks_rotation=0,
+                ylabel_size=35,
+                yticks_size=30,
+                cbar_label_size=30,
                 plot_eps_log=True
                 )
 
@@ -276,32 +289,84 @@ for roi in roi_list:
 
 #%%
 ### save
-top_k_accuracy_all.to_csv(os.path.join(main_results_dir, 'top_k_accuracy_all_pairs.csv'))
-cat_accuracy_all.to_csv(os.path.join(main_results_dir, 'cat_accuracy_all_pairs.csv'))
-df_rsa_all.to_csv(os.path.join(main_results_dir, 'df_rsa_all_pairs.csv'))
-df_gwd_all.to_csv(os.path.join(main_results_dir, 'df_gwd_all_pairs.csv'))
+top_k_accuracy_all.to_csv(os.path.join(main_results_dir, f'top_k_accuracy_all_pairs_{init_mat_plan}.csv'))
+cat_accuracy_all.to_csv(os.path.join(main_results_dir, f'cat_accuracy_all_pairs_{init_mat_plan}.csv'))
+df_rsa_all.to_csv(os.path.join(main_results_dir, f'df_rsa_all_pairs_{init_mat_plan}.csv'))
+df_gwd_all.to_csv(os.path.join(main_results_dir, f'df_gwd_all_pairs_{init_mat_plan}.csv'))
 
+#%%
 ### show summary figure
+def show_matrix(df, col_name, title, save_dir, file_name, first_items=None, second_items=None, rename_index=None, rename_columns=None):
+    # ペア名を分割して、別々の列にする
+    df[['first_item', 'second_item']] = df['pair_name'].str.split('_vs_', expand=True)
+
+    # マトリックスの初期化
+    if first_items is None:
+    #unique_items = np.unique(df[['first_item', 'second_item']].values)
+        first_items = np.unique(df['first_item'].values)
+    if second_items is None:
+        second_items = np.unique(df['second_item'].values)
+    matrix = pd.DataFrame(np.nan, index=first_items, columns=second_items)
     
+    # マトリックスにGWD値を代入
+    for index, row in df.iterrows():
+        matrix.at[row['first_item'], row['second_item']] = row[col_name]
+
+    # rename indices and columns
+    if rename_index is not None:
+        matrix = matrix.rename(index=rename_index)
+    if rename_columns is not None:
+        matrix = matrix.rename(columns=rename_columns)
+        
+    plt.figure(figsize=(8, 10))
+    plt.rcParams['font.family'] = 'Arial'
+    plt.rcParams['font.size'] = 25
+    sns.heatmap(matrix, annot=True, cmap='rocket', fmt=".2f")
+    plt.tick_params(axis='x', rotation=0)
+    plt.tick_params(axis='y', rotation=0)
+    #plt.title(title, fontsize=20)
+    plt.subplots_adjust(top=0.95, bottom=0.3)
+    plt.show()
+    plt.savefig(os.path.join(save_dir, file_name))
 #%%
 main_results_dir = "../results/gw_alignment/models/"
 fig_dir = f"../results/figs/models/"
+roi_list = ['fMRI_v1', 'fMRI_v2', 'fMRI_v3', 'fMRI_pVTC', 'fMRI_aVTC']
+model_list = ['AlexNet_final', 'VGG19_final', 'ViT_B16_ImageNet21K_final', 'CLIP_B16_OpenAI_final']
+rename_index = {'fMRI_v1': 'v1', 'fMRI_v2': 'v2', 'fMRI_v3': 'v3', 'fMRI_pVTC': 'pVTC', 'fMRI_aVTC': 'aVTC'}
+rename_columns = {'AlexNet_final': 'AlexNet', 'VGG19_final': 'VGG19', 'ViT_B16_ImageNet21K_final': 'ViT', 'CLIP_B16_OpenAI_final': 'CLIP'}
 
 # top k acc
 df = pd.read_csv(os.path.join(main_results_dir, 'top_k_accuracy_all_pairs.csv'))
-top_k = 1
-title = f'top{top_k} matching rate'
-file_name = f'top_{top_k}_accuracy'
+for top_k in [1, 5]:
+    title = f'top{top_k} matching rate'
+    file_name = f'top_{top_k}_accuracy'
 
-show_matrix(df, col_name=str(top_k), title=title, save_dir=fig_dir, file_name=file_name)
+    show_matrix(df, 
+    col_name=str(top_k), 
+    title=title, 
+    save_dir=fig_dir, 
+    file_name=file_name, 
+    first_items=roi_list, 
+    second_items=model_list, 
+    rename_index = rename_index, 
+    rename_columns=rename_columns)
 # %%
 # category
 df = pd.read_csv(os.path.join(main_results_dir, 'cat_accuracy_all_pairs.csv')) 
-top_k = 1
-title = f'category level accuracy'
-file_name = f'category_top_{top_k}_accuracy'
-
-show_matrix(df, col_name=str(top_k), title=title, save_dir=fig_dir, file_name=file_name)
+for top_k in [1, 5]:
+    title = f'category level accuracy'
+    file_name = f'category_top_{top_k}_accuracy'
+    
+    show_matrix(df, 
+    col_name=str(top_k), 
+    title=title, 
+    save_dir=fig_dir, 
+    file_name=file_name, 
+    first_items=roi_list, 
+    second_items=model_list, 
+    rename_index = rename_index, 
+    rename_columns=rename_columns)
 
 #%%
 # rsa
@@ -310,7 +375,15 @@ col_name = 'correlation'
 title = 'RSA correlation'
 file_name = f'rsa_all_pairs'
 
-show_matrix(df, col_name=col_name, title=title, save_dir=fig_dir, file_name=file_name)
+show_matrix(df, 
+col_name=col_name, 
+title=title, 
+save_dir=fig_dir, 
+file_name=file_name, 
+first_items=roi_list, 
+second_items=model_list, 
+rename_index = rename_index, 
+rename_columns=rename_columns)
 
 # %%
 # gwd
@@ -319,5 +392,13 @@ col_name = 'gwd'
 title = 'GWD'
 file_name = f'gwd_all_pairs'
 
-show_matrix(df, col_name=col_name, title=title, save_dir=fig_dir, file_name=file_name)
+show_matrix(df, 
+col_name=col_name, 
+title=title, 
+save_dir=fig_dir, 
+file_name=file_name, 
+first_items=roi_list, 
+second_items=model_list, 
+rename_index = rename_index, 
+rename_columns=rename_columns)
 # %%

@@ -106,10 +106,14 @@ for roi in roi_list:
             figsize=(8, 6), 
             #title_size = 15, 
             cmap = "rocket_r",
-            #cbar_ticks_size=30,
-            #font = "Arial",
-            #cbar_label="Dissimilarity",
-            #cbar_label_size=40,
+            cbar_ticks_size=30,
+            font = "Arial",
+            cbar_label="Dissimilarity",
+            cbar_label_size=40,
+            xlabel=f"515 images",
+            xlabel_size = 35,
+            ylabel=f"515 images",
+            ylabel_size = 35,
             )
 
         os.makedirs(f"../results/figs/{roi}/seed{seed}/", exist_ok=True)
@@ -129,16 +133,16 @@ for roi in roi_list:
             figsize=(8, 6), 
             #title_size = 15, 
             cmap = "rocket_r",
-            #cbar_ticks_size=30,
-            #font = "Arial",
-            #cbar_label="Probability",
-            #cbar_label_size=40,
+            cbar_ticks_size=30,
+            font = "Arial",
+            cbar_label="Probability",
+            cbar_label_size=40,
             #color_labels = new_color_order,
             #color_label_width = 5,
-            #xlabel=f"93 colors of {name_list[0]}",
-            #xlabel_size = 40,
-            #ylabel=f"93 colors of {name_list[1]}",
-            #ylabel_size = 40,
+            xlabel=f"515 images of Group1",
+            xlabel_size = 35,
+            ylabel=f"515 images of Group2",
+            ylabel_size = 35,
             )
 
         OT_sorted = alignment.gw_alignment(
@@ -164,16 +168,16 @@ for roi in roi_list:
 
         vis_config_log = VisualizationConfig(
             figsize=(8, 6), 
-            #title_size = 15, 
-            #cbar_ticks_size=30,
-            #font = "Arial",
-            #fig_ext="svg",
-            #xlabel_size=35,
-            #xticks_size=30,
-            #xticks_rotation=0,
-            #ylabel_size=35,
-            #yticks_size=30,
-            #cbar_label_size=30,
+            title_size = 10, 
+            cbar_ticks_size=30,
+            font = "Arial",
+            fig_ext="svg",
+            xlabel_size=35,
+            xticks_size=30,
+            xticks_rotation=0,
+            ylabel_size=35,
+            yticks_size=30,
+            cbar_label_size=30,
             plot_eps_log=True
             )
 

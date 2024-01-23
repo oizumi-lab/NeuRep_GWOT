@@ -71,6 +71,26 @@ for result in ['rsa_corr', 'top1_acc', 'category_top1', 'gwd']:
         plt.ylim(0, 1)
     elif result in ['top1_acc', 'category_top1']:
         plt.ylim(-5, 100)
+        
+        # show chance level
+        if result == 'top1_acc':
+            chance_level = 100/515
+        elif result == 'category_top1':
+            
+            def calc_chance_level(category_mat):
+                mat = category_mat.values
+                n_object, n_category = mat.shape
+                sum = np.sum(mat, axis=0)
+                prob = sum / n_object
+                chance = np.matmul(mat, prob)
+                chance = np.sum(chance) / n_object
+
+                return chance
+            
+            category_mat = pd.read_csv('../data/category_mat_shared515.csv', index_col=0)
+            chance_level = calc_chance_level(category_mat) * 100
+            print(chance_level)
+        plt.axhline(y=chance_level, color='black', linestyle='--')
     plt.tight_layout()
     plt.show()
     plt.savefig(fig_dir+f'{result}_swarmplot.png')
@@ -111,8 +131,15 @@ for result in result_list:
     matrix = matrix + matrix.T - np.diag(np.diag(matrix))
     
     plt.figure()
-    sns.heatmap(matrix, annot=True, cmap='rocket')
-    plt.title(result.replace('_', ' '))
+    # set font
+    plt.rcParams['font.family'] = 'Arial'
+    plt.rcParams['font.size'] = 20
+    # do not show the xlabel title
+    ax = sns.heatmap(matrix, annot=True, cmap='rocket', square=True)
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    #sns.heatmap(matrix, annot=True, cmap='rocket', square=True)
+    #plt.title(result.replace('_', ' '))
     plt.show()
     plt.savefig(fig_dir+f'{result}.png')
 

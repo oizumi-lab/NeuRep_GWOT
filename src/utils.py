@@ -79,10 +79,12 @@ def show_matrix(df, col_name, title, save_dir, file_name, first_items=None, seco
         matrix.at[row['first_item'], row['second_item']] = row[col_name]
 
     plt.figure(figsize=(8, 10))
+    plt.rcParams['font.family'] = 'Arial'
+    plt.rcParams['font.size'] = 20
     sns.heatmap(matrix, annot=True, cmap='rocket', fmt=".2f")
     #plt.tick_params(axis='x', labelsize=15)
     #plt.tick_params(axis='y', labelsize=15)
-    plt.title(title, fontsize=20)
+    #plt.title(title, fontsize=20)
     plt.subplots_adjust(top=0.95, bottom=0.3)
     plt.show()
     plt.savefig(os.path.join(save_dir, file_name))

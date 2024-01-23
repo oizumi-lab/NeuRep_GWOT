@@ -219,14 +219,21 @@ class KFoldCV():
 #%%
 if __name__ == "__main__":
     # load the dataset
-    data = pd.read_csv('../data/behavior/sis_all_dissim.csv', index_col=0)
+    category = True
+    
+    if category:
+        data = pd.read_csv('../data/behavior/sis_all_dissim_category.csv', index_col=0)
+        image_num = 80
+        emb_dim = 50
+        save_name = 'embedding_category.npy'
+    else:
+        data = pd.read_csv('../data/behavior/sis_all_dissim.csv', index_col=0)
+        image_num = 10000
+        emb_dim = 200
+        save_name = 'embedding.npy'
     
     # device 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-
-    # Train the model
-    emb_dim = 200
-    image_num = 10000
     
     # Define the optimizer (e.g., Adam)
     lr = 0.001
@@ -240,7 +247,7 @@ if __name__ == "__main__":
     ### cv params
     n_splits = 10
     lamb_range = [1e-3, 1]
-    study_name = f"COCO_behavior_metric={distance_metric}"
+    study_name = f"COCO_behavior_metric={distance_metric}{'_category' if category else ''}"
     n_trials = 5
 
     
@@ -283,7 +290,7 @@ if __name__ == "__main__":
                                 distance_metric = distance_metric,
                                 lamb=lamb)
 
-    np.save(f"../data/behavior/embeddings.npy", embeddings)
+    np.save(f"../data/behavior/{save_name}", embeddings)
 
 # %%    
 #### check dimensionality
@@ -295,31 +302,54 @@ plt.show()
 #
 # %%
 ### show simmmat
-embeddings = np.load(f"../data/behavior/embeddings.npy")
+embeddings = np.load(f"../data/behavior/{save_name}")
 category_mat = pd.read_csv('../data/behavior/category_mat_behavior.csv', index_col=0)
 object_labels, category_idx_list, category_num_list, new_category_name_list = get_category_data(category_mat)
 
-behav = Representation(
+if category:
+    behav = Representation(
         name=f"behavior",
         embedding=embeddings,
         metric='euclidean',
-        object_labels=object_labels,
-        category_name_list=new_category_name_list,
-        num_category_list=category_num_list,
-        category_idx_list=category_idx_list,
-        func_for_sort_sim_mat=sort_matrix_with_categories
+        #object_labels=object_labels,
+        #category_name_list=new_category_name_list,
+        #num_category_list=category_num_list,
+        #category_idx_list=category_idx_list,
+        #func_for_sort_sim_mat=sort_matrix_with_categories
+    )
+    
+    vis_config = VisualizationConfig(
+        cmap='rocket',
+    )
+    
+    behav.show_sim_mat(
+        sim_mat_format="default",
+        visualization_config=vis_config,
     )
 
-vis_config = VisualizationConfig(
-    cmap='rocket',
-    draw_category_line=True, 
-    #category_line_color='red', 
-    category_line_alpha=0.1, 
-    category_line_style='-',
-    )
-behav.show_sim_mat(
-    sim_mat_format="sorted",
-    visualization_config=vis_config,
-    ticks='category'
-    )
+else:
+    
+    behav = Representation(
+            name=f"behavior",
+            embedding=embeddings,
+            metric='euclidean',
+            object_labels=object_labels,
+            category_name_list=new_category_name_list,
+            num_category_list=category_num_list,
+            category_idx_list=category_idx_list,
+            func_for_sort_sim_mat=sort_matrix_with_categories
+        )
+
+    vis_config = VisualizationConfig(
+        cmap='rocket',
+        draw_category_line=True, 
+        #category_line_color='red', 
+        category_line_alpha=0.1, 
+        category_line_style='-',
+        )
+    behav.show_sim_mat(
+        sim_mat_format="sorted",
+        visualization_config=vis_config,
+        ticks='category'
+        )
 # %%
