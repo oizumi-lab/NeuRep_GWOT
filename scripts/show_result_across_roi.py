@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import scipy.cluster.hierarchy as sch
 
 #%%
 # load results
@@ -58,13 +59,22 @@ for roi in roi_list:
 fig_dir = '../results/figs/within_roi/'
 palette = sns.color_palette('bright', n_colors=5)
 for result in ['rsa_corr', 'top1_acc', 'category_top1', 'gwd']:
-    plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(8, 6))
     plt.style.use('seaborn-v0_8-darkgrid')
     sns.swarmplot(x='roi', y=result, data=df_for_plot, palette=palette, size=8)
     #plt.title(result.replace('_', ' '))
     plt.xticks(ticks=range(len(roi_list)), labels=roi_list)
     plt.xlabel('roi', size=35)
-    plt.ylabel(result.replace('_', ' '), size=30)
+    
+    if result in ['rsa_corr']:
+        ylabel = 'Correlation'
+    elif result in ['top1_acc']:
+        ylabel = 'Top-1 matching rate (%)'
+    elif result in ['category_top1']:
+        ylabel = 'Category matching rate (%)'
+    elif result in ['gwd']:
+        ylabel = 'GWD'
+    plt.ylabel(ylabel, size=30)
     plt.xticks(size=30)
     plt.yticks(size=30)
     if result in ['rsa_corr']:
@@ -135,13 +145,26 @@ for result in result_list:
     plt.rcParams['font.family'] = 'Arial'
     plt.rcParams['font.size'] = 20
     # do not show the xlabel title
-    ax = sns.heatmap(matrix, annot=True, cmap='rocket', square=True)
+    ax = sns.heatmap(matrix, annot=True, cmap='rocket_r', square=True)
     ax.set_xlabel('')
     ax.set_ylabel('')
     #sns.heatmap(matrix, annot=True, cmap='rocket', square=True)
     #plt.title(result.replace('_', ' '))
     plt.show()
     plt.savefig(fig_dir+f'{result}.png')
+
+    # show a dendrogram
+    plt.figure(figsize=(8, 4))
+    plt.rcParams['font.family'] = 'Arial'
+    plt.rcParams['font.size'] = 20
+    if result in ['top1_acc', 'category_top1', 'rsa_corr']:
+        matrix = (1 - matrix)/100
+    sch.dendrogram(sch.linkage(matrix, method='ward'), labels=roi_list)
+    plt.xticks(size=30)
+    plt.yticks(size=25)
+    plt.ylabel('Distance', size=25)
+    plt.savefig(fig_dir+f'dendrogram_{result}.png')
+    plt.show()
 
 
 # %%

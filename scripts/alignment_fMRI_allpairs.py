@@ -65,7 +65,8 @@ for roi in roi_list:
             representations.append(representation)
 
         
-        main_results_dir = "../results/gw_alignment/"
+        #main_results_dir = "../results/gw_alignment/"
+        main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
         init_mat_plan = 'random'
         data_name = f"NSD_within_{roi}_allpairs"
         

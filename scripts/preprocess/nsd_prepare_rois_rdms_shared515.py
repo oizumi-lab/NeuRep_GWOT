@@ -2,6 +2,7 @@
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 
 import time
 import numpy as np
@@ -10,6 +11,7 @@ from scipy.spatial.distance import pdist, cdist
 from nsd_access.nsd_access import NSDAccess
 from nsddatapaper_rsa.utils.nsd_get_data import get_conditions, get_betas
 from nsddatapaper_rsa.utils.utils import average_over_conditions
+from nsdcode.nsd_mapdata import NSDmapdata
 
 #%%
 """
@@ -22,12 +24,24 @@ n_subjects = 8
 # subjects
 subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
 
+
+
+#ROIS = {1: 'pVTC', 2: 'aVTC', 3: 'v1', 4: 'v2', 5: 'v3'}
+#ROIS = {7: 'hV4'}
+#ROIS = {1: "LGN", 2: "ventralPul", 3: "dorsolateralPul", 4: "dorsomedialPul", 5: "SC"}
+#ROIS = {1: "thalamus"}
+ROIS = {1: "early", 2: "midventral", 3: "midlateral", 4: "midparietal", 5: "ventral", 6: "lateral", 7: "parietal"}
+
+# we use the fsaverage space.
+targetspace = 'fsaverage' # 'func1pt8mm'
+
 #%%
-for sub in subs:
+for i, sub in enumerate(subs):
 
     # set up directories
     #nsd_dir = "/home1/common-data/natural-scenes-dataset/"
-    base_dir = "/home1/data/common-data/natural-scenes-dataset/"
+    #base_dir = "/home1/data/common-data/natural-scenes-dataset/"
+    base_dir = "/mnt/NAS/common_data/natural-scenes-dataset/"
     nsd_dir = base_dir
     proj_dir = base_dir
     #nsd_dir = os.path.join(base_dir, 'charesti-start', 'data', 'NSD')
@@ -37,27 +51,53 @@ for sub in subs:
 
     # initiate nsd access
     nsda = NSDAccess(nsd_dir)
+    mapdata = NSDmapdata(nsd_dir)
 
     # path where we save the rdms
     outpath = os.path.join(betas_dir, 'roi_analyses')
     if not os.path.exists(outpath):
         os.makedirs(outpath)
 
-    # we use the fsaverage space.
-    targetspace = 'fsaverage'
+    #lh_file = os.path.join("../../nsddatapaper/mainfigures/SCIENCE.RSA", 'lh.highlevelvisual.mgz')
+    #rh_file = os.path.join("../../nsddatapaper/mainfigures/SCIENCE.RSA", 'rh.highlevelvisual.mgz')
 
-    lh_file = os.path.join("../nsddatapaper/mainfigures/SCIENCE.RSA", 'lh.highlevelvisual.mgz')
-    rh_file = os.path.join("../nsddatapaper/mainfigures/SCIENCE.RSA", 'rh.highlevelvisual.mgz')
+    if targetspace == 'fsaverage':
+        lh_file = os.path.join(nsd_dir, 'nsddata', 'freesurfer', f'{sub}', 'label', 'lh.prf-visualrois.mgz')
+        rh_file = os.path.join(nsd_dir, 'nsddata', 'freesurfer', f'{sub}', 'label', 'rh.prf-visualrois.mgz')
+        
+        # load the lh mask
+        maskdata_lh = nib.load(lh_file).get_fdata().squeeze()
+        maskdata_rh = nib.load(rh_file).get_fdata().squeeze()
+        
+        maskdata_lh = mapdata.fit(
+            subjix=i+1,
+            sourcespace='lh.white',
+            targetspace='fsaverage',
+            sourcedata=maskdata_lh,
+            outputclass='single',
+            outputfile=None,
+            interptype='nearest'
+        )
+        
+        maskdata_rh = mapdata.fit(
+            subjix=i+1,
+            sourcespace='rh.white',
+            targetspace='fsaverage',
+            sourcedata=maskdata_rh,
+            outputclass='single',
+            outputfile=None,
+            interptype='nearest'
+        )
+        
+    else:
+        lh_file = os.path.join(nsd_dir, 'nsddata', 'ppdata', f'{sub}', f'{targetspace}', 'roi', 'lh.thalamus.nii.gz')
+        rh_file = os.path.join(nsd_dir, 'nsddata', 'ppdata', f'{sub}', f'{targetspace}', 'roi', 'rh.thalamus.nii.gz')
 
-    # load the lh mask
-    maskdata_lh = nib.load(lh_file).get_fdata().squeeze()
-    maskdata_rh = nib.load(rh_file).get_fdata().squeeze()
+        # load the lh mask
+        maskdata_lh = nib.load(lh_file).get_fdata().squeeze()
+        maskdata_rh = nib.load(rh_file).get_fdata().squeeze()
 
     maskdata = np.hstack((maskdata_lh, maskdata_rh))
-
-    ROIS = {1: 'pVTC', 2: 'aVTC', 3: 'v1', 4: 'v2', 5: 'v3'}
-
-    roi_names = ['pVTC', 'aVTC', 'v1', 'v2', 'v3']
 
     # sessions
     n_sessions = 40
@@ -79,7 +119,7 @@ for sub in subs:
 
     # find the subject's unique condition list (sample pool)
     #sample = np.unique(conditions[conditions_bool])
-    sample_shared515 = np.array(np.load("../data/shared515ids.npy"))
+    sample_shared515 = np.array(np.load("../../data/shared515ids.npy"))
 
     #betas_file = os.path.join(
     #    outpath, f'{sub}_betas_list_{targetspace}.npy'
@@ -134,10 +174,9 @@ for sub in subs:
     #        conditions_sampled
     #    )
 
+    #%%
     # save the subject's full ROI RDMs
-    for roi in range(1, 6):
-    #for roi in range(1, 2):
-        mask_name = ROIS[roi]
+    for roi, mask_name in ROIS.items():
 
         rdm_file_shared515 = os.path.join(
             outpath, f'{sub}_{mask_name}_fullrdm_shared515_correlation.npy'
@@ -145,8 +184,11 @@ for sub in subs:
 
         #if not os.path.exists(rdm_file):
 
-        # logical array of mask vertices
-        vs_mask = maskdata == roi
+        if mask_name == "thalamus":
+            vs_mask = maskdata >= 1
+        else:
+            # logical array of mask vertices
+            vs_mask = maskdata == roi
         print(f'working on ROI: {mask_name}')
 
         #masked_betas = betas_mean[vs_mask, :]

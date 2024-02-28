@@ -19,7 +19,8 @@ from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
-roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+#roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
 n_sample = 10
 seed_list = range(n_sample)
 #seed_list = range(5, 10)
@@ -49,6 +50,7 @@ for seed_id, groups in enumerate(groups_list):
     top_k_list = [1, 3, 5]
     top_k_accuracy = pd.DataFrame()
     #top_k_accuracy["top_n"] = top_k_list
+    k_nearest_accuracy = pd.DataFrame()
     
     cat_accuracy = pd.DataFrame()
     #cat_accuracy["top_n"] = top_k_list
@@ -63,7 +65,7 @@ for seed_id, groups in enumerate(groups_list):
             roi = roi_pair[j]
             RDMs = []
             for i in group:
-                RDM = np.load(f"/home1/data/common-data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
+                RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
                 RDMs.append(RDM)
             RDMs = np.stack(RDMs)
             mean_RDM = np.mean(RDMs, axis=0)
@@ -72,7 +74,8 @@ for seed_id, groups in enumerate(groups_list):
                 name=f"{roi}",
                 sim_mat=mean_RDM,
                 metric="euclidean",
-                get_embedding=False,
+                get_embedding=True,
+                MDS_dim=10,
                 object_labels=object_labels,
                 category_name_list=new_category_name_list,
                 num_category_list=category_num_list,
@@ -82,11 +85,12 @@ for seed_id, groups in enumerate(groups_list):
             representations.append(representation)
 
         
-        main_results_dir = "../results/gw_alignment/"
+        #main_results_dir = "../results/gw_alignment/"
+        main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
         init_mat_plan = 'random'
         data_name = f"NSD_across_roi_seed{seed}"
         
-        device = 'cuda:2'
+        device = 'cuda:0'
 
         if "cuda" in device:
             sinkhorn_method = "sinkhorn_log" # please choose the method of sinkhorn implemented by POT (URL : https://pythonot.github.io/gen_modules/ot.bregman.html#id87). For using GPU, "sinkhorn_log" is recommended.
@@ -211,6 +215,11 @@ for seed_id, groups in enumerate(groups_list):
             top_k_list=top_k_list, 
             eval_type="ot_plan"
             )
+        
+        alignment.calc_accuracy(
+            top_k_list=top_k_list, 
+            eval_type="k_nearest",
+            )
 
         alignment.plot_accuracy(
             eval_type="ot_plan", 
@@ -219,6 +228,8 @@ for seed_id, groups in enumerate(groups_list):
             )
         
         top_k_accuracy = pd.concat([top_k_accuracy, alignment.top_k_accuracy], axis=1)
+        k_nearest_accuracy = pd.concat([k_nearest_accuracy, alignment.k_nearest_matching_rate], axis=1)
+        
         
         # category level
         eval_mat = np.matmul(category_mat.values, category_mat.values.T)
@@ -253,6 +264,10 @@ for seed_id, groups in enumerate(groups_list):
     top_k_accuracy.index.name = 'pair_name'
     top_k_accuracy.to_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
     
+    k_nearest_accuracy = k_nearest_accuracy.T
+    k_nearest_accuracy.index.name = 'pair_name'
+    k_nearest_accuracy.to_csv(os.path.join(save_dir, 'k_nearest_accuracy.csv'))
+    
     cat_accuracy = cat_accuracy.T
     cat_accuracy.index.name = 'pair_name'
     cat_accuracy.to_csv(os.path.join(save_dir, 'category_accuracy.csv'))
@@ -268,6 +283,7 @@ for seed_id, groups in enumerate(groups_list):
 #%%
 # concatenate results
 top_k_accuracy_all = pd.DataFrame()
+k_nearest_accuracy_all = pd.DataFrame()
 cat_accuracy_all = pd.DataFrame()
 rsa_corr_all = pd.DataFrame()
 gwd_all = pd.DataFrame()
@@ -276,11 +292,13 @@ for seed in range(n_sample):
     main_results_dir = f'../results/gw_alignment/across_roi/seed{seed}/'
     
     top_k_accuracy = pd.read_csv(os.path.join(main_results_dir, 'top_k_accuracy.csv'))
+    k_nearest_accuracy = pd.read_csv(os.path.join(main_results_dir, 'k_nearest_accuracy.csv'))
     cat_accuracy = pd.read_csv(os.path.join(main_results_dir, 'category_accuracy.csv'))
     rsa_corr = pd.read_csv(os.path.join(main_results_dir, 'rsa_correlation.csv'))
     gwd = pd.read_csv(os.path.join(main_results_dir, 'gw_distance.csv'))
     
     top_k_accuracy_all = pd.concat([top_k_accuracy_all, top_k_accuracy], axis=0)
+    k_nearest_accuracy_all = pd.concat([k_nearest_accuracy_all, k_nearest_accuracy], axis=0)
     cat_accuracy_all = pd.concat([cat_accuracy_all, cat_accuracy], axis=0)
     rsa_corr_all = pd.concat([rsa_corr_all, rsa_corr], axis=0)
     gwd_all = pd.concat([gwd_all, gwd], axis=0)
@@ -289,6 +307,7 @@ for seed in range(n_sample):
 save_dir = f'../results/gw_alignment/across_roi/'
 os.makedirs(save_dir, exist_ok=True)
 top_k_accuracy_all.to_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
+k_nearest_accuracy_all.to_csv(os.path.join(save_dir, 'k_nearest_accuracy.csv'))
 cat_accuracy_all.to_csv(os.path.join(save_dir, 'category_accuracy.csv'))
 rsa_corr_all.to_csv(os.path.join(save_dir, 'rsa_correlation.csv'))
 gwd_all.to_csv(os.path.join(save_dir, 'gw_distance.csv'))

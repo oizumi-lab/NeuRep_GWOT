@@ -18,12 +18,15 @@ from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
-roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+#roi_list = ['hV4'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
 n_sample = 10
 seed_list = range(n_sample)
 #seed_list = range(5, 10)
+#seed_list = [4]
 
 compute_OT = False
+get_embedding = False
 
 #%%
 
@@ -44,6 +47,9 @@ for roi in roi_list:
     top_k_accuracy = pd.DataFrame()
     #top_k_accuracy["top_n"] = top_k_list
     
+    k_nearest_accuracy = pd.DataFrame()
+    sup_accuracy = pd.DataFrame()
+    
     cat_accuracy = pd.DataFrame()
     #cat_accuracy["top_n"] = top_k_list
     
@@ -57,7 +63,7 @@ for roi in roi_list:
         for j, group in enumerate(groups):
             RDMs = []
             for i in group:
-                RDM = np.load(f"/home1/data/common-data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
+                RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
                 RDMs.append(RDM)
             RDMs = np.stack(RDMs)
             mean_RDM = np.mean(RDMs, axis=0)
@@ -66,7 +72,8 @@ for roi in roi_list:
                 name=f"Group{j+1}_{roi}",
                 sim_mat=mean_RDM,
                 metric="euclidean",
-                get_embedding=False,
+                get_embedding=get_embedding,
+                MDS_dim=50,
                 object_labels=object_labels,
                 category_name_list=new_category_name_list,
                 num_category_list=category_num_list,
@@ -76,20 +83,22 @@ for roi in roi_list:
             representations.append(representation)
 
         
-        main_results_dir = "../results/gw_alignment/"
+        #main_results_dir = "../results/gw_alignment/"
+        main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
         init_mat_plan = 'random'
         data_name = f"NSD_within_{roi}_seed{seed}"
+        pair_name = f"Group1_{roi}_vs_Group2_{roi}"
         
         opt_config = OptimizationConfig(
             init_mat_plan=init_mat_plan,
             db_params={"drivername": "sqlite"},
-            num_trial=100,
+            num_trial=200,
             n_iter=1, 
             max_iter=200,
             sampler_name="tpe", 
             eps_list=[1e-4, 1e-2],
             eps_log=True,
-            device='cuda:2',
+            device='cuda:1',
             to_types='torch',
             multi_gpu=False
         )
@@ -129,6 +138,7 @@ for roi in roi_list:
         rsa_corr = pd.DataFrame([alignment.RSA_corr], index=['correlation'])
         df_rsa = pd.concat([df_rsa, rsa_corr], axis=1)
 
+        #%%
         vis_config_OT = VisualizationConfig(
             figsize=(8, 6), 
             #title_size = 15, 
@@ -143,6 +153,7 @@ for roi in roi_list:
             xlabel_size = 35,
             ylabel=f"515 images of Group2",
             ylabel_size = 35,
+            colorbar_range=[0, 0.001]
             )
 
         OT_sorted = alignment.gw_alignment(
@@ -155,6 +166,16 @@ for roi in roi_list:
             save_dataframe=True
             )
         
+        OT = alignment.gw_alignment(
+            compute_OT=compute_OT,
+            delete_results=False,
+            OT_format="default",
+            return_data=True,
+            return_figure=False,
+            )
+        
+        np.save(os.path.join(main_results_dir, data_name+'_'+pair_name, init_mat_plan, 'data/gw_best'), OT)
+        
         # record gwd
         gwds = {}
         for pairwise in alignment.pairwise_list:
@@ -166,6 +187,7 @@ for roi in roi_list:
         gwds = pd.DataFrame([gwds], index=['gwd'])
         df_gwd = pd.concat([df_gwd, gwds], axis=1)
 
+        #%%
         vis_config_log = VisualizationConfig(
             figsize=(8, 6), 
             title_size = 10, 
@@ -191,6 +213,23 @@ for roi in roi_list:
             top_k_list=top_k_list, 
             eval_type="ot_plan"
             )
+        
+        if get_embedding:
+            alignment.calc_accuracy(
+                top_k_list=top_k_list, 
+                eval_type="k_nearest",
+                )
+
+            k_nearest_accuracy = pd.concat([k_nearest_accuracy, alignment.k_nearest_matching_rate])
+
+            alignment.calc_accuracy(
+                top_k_list=top_k_list,
+                eval_type="k_nearest",
+                ot_to_evaluate=np.eye(515)
+            )
+
+            sup_accuracy = pd.concat([sup_accuracy, alignment.k_nearest_matching_rate])
+        
 
         alignment.plot_accuracy(
             eval_type="ot_plan", 
@@ -199,6 +238,9 @@ for roi in roi_list:
             )
         
         top_k_accuracy = pd.concat([top_k_accuracy, alignment.top_k_accuracy])
+        if get_embedding:
+            k_nearest_accuracy = pd.concat([k_nearest_accuracy, alignment.k_nearest_matching_rate])
+            sup_accuracy = pd.concat([sup_accuracy, alignment.k_nearest_matching_rate])
         
         # category level
         eval_mat = np.matmul(category_mat.values, category_mat.values.T)
@@ -217,12 +259,40 @@ for roi in roi_list:
         
         cat_accuracy = pd.concat([cat_accuracy, alignment.top_k_accuracy])
         
+        #%%
+        if get_embedding:
+            vis_config_emb = VisualizationConfig(
+                figsize=(8, 8),
+                xlabel="PC1",
+                ylabel="PC2",
+                zlabel="PC3",
+                marker_size=15,
+                legend_size=10,
+                )
+
+            category_name_list = ['bird', 'giraffe', 'chair', 'clock', 'bottle', 'elephant']
+            object_labels, category_idx_list, num_category_list, category_name_list = get_category_data(category_mat, category_name_list, show_numbers = True)
+
+            alignment.visualize_embedding(
+                dim=3,
+                visualization_config=vis_config_emb,
+                fig_dir=f"../results/figs/{roi}/seed{seed}/",
+                category_name_list=category_name_list,
+                category_idx_list=category_idx_list,
+                num_category_list=num_category_list,
+
+            )
+        
+        #%%
     # save data
     save_dir = f'../results/gw_alignment/within{roi}/'
     os.makedirs(save_dir, exist_ok=True)
 
     top_k_accuracy.to_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
     cat_accuracy.to_csv(os.path.join(save_dir, 'category_accuracy.csv'))
+    if get_embedding:
+        k_nearest_accuracy.to_csv(os.path.join(save_dir, 'k_nearest_accuracy.csv'))
+        sup_accuracy.to_csv(os.path.join(save_dir, 'sup_accuracy.csv'))
     
     df_rsa = df_rsa.T
     df_rsa.index.name = 'pair_name'
