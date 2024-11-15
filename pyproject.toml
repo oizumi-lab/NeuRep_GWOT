@@ -45,6 +45,9 @@ torchmetrics = "^1.2.0"
 open-clip-torch = "^2.23.0"
 transformers = "^4.35.0"
 nltk = "^3.8.1"
+pysurfer = "^0.11.2"
+traits = "^6.4.3"
+traitsui = "^8.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

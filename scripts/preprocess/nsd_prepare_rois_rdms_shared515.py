@@ -30,10 +30,13 @@ subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
 #ROIS = {7: 'hV4'}
 #ROIS = {1: "LGN", 2: "ventralPul", 3: "dorsolateralPul", 4: "dorsomedialPul", 5: "SC"}
 #ROIS = {1: "thalamus"}
-ROIS = {1: "early", 2: "midventral", 3: "midlateral", 4: "midparietal", 5: "ventral", 6: "lateral", 7: "parietal"}
+# ROIS = {1: "MTL"}
+#ROIS = {1: "early", 2: "midventral", 3: "midlateral", 4: "midparietal", 5: "ventral", 6: "lateral", 7: "parietal"}
+ROIS = {1: "OPA", 2: "PPA", 3: "RSC"} 
 
 # we use the fsaverage space.
-targetspace = 'fsaverage' # 'func1pt8mm'
+# targetspace = 'func1pt8mm' # 'func1pt8mm''fsaverage'
+targetspace = 'fsaverage'
 
 #%%
 for i, sub in enumerate(subs):
@@ -62,8 +65,8 @@ for i, sub in enumerate(subs):
     #rh_file = os.path.join("../../nsddatapaper/mainfigures/SCIENCE.RSA", 'rh.highlevelvisual.mgz')
 
     if targetspace == 'fsaverage':
-        lh_file = os.path.join(nsd_dir, 'nsddata', 'freesurfer', f'{sub}', 'label', 'lh.prf-visualrois.mgz')
-        rh_file = os.path.join(nsd_dir, 'nsddata', 'freesurfer', f'{sub}', 'label', 'rh.prf-visualrois.mgz')
+        lh_file = os.path.join(nsd_dir, 'nsddata', 'freesurfer', f'{sub}', 'label', 'lh.streams.mgz') #prf-visualrois
+        rh_file = os.path.join(nsd_dir, 'nsddata', 'freesurfer', f'{sub}', 'label', 'rh.streams.mgz')
         
         # load the lh mask
         maskdata_lh = nib.load(lh_file).get_fdata().squeeze()
@@ -89,18 +92,19 @@ for i, sub in enumerate(subs):
             interptype='nearest'
         )
         
+        maskdata = np.hstack((maskdata_lh, maskdata_rh))
+        
     else:
-        lh_file = os.path.join(nsd_dir, 'nsddata', 'ppdata', f'{sub}', f'{targetspace}', 'roi', 'lh.thalamus.nii.gz')
-        rh_file = os.path.join(nsd_dir, 'nsddata', 'ppdata', f'{sub}', f'{targetspace}', 'roi', 'rh.thalamus.nii.gz')
+        #lh_file = os.path.join(nsd_dir, 'nsddata', 'ppdata', f'{sub}', f'{targetspace}', 'roi', 'lh.thalamus.nii.gz')
+        #rh_file = os.path.join(nsd_dir, 'nsddata', 'ppdata', f'{sub}', f'{targetspace}', 'roi', 'rh.thalamus.nii.gz')
+#
+        ## load the lh mask
+        #maskdata_lh = nib.load(lh_file).get_fdata().squeeze()
+        #maskdata_rh = nib.load(rh_file).get_fdata().squeeze()
+        file = os.path.join(nsd_dir, 'nsddata', 'ppdata', f'{sub}', f'{targetspace}', 'roi', 'MTL.nii.gz')
+        maskdata = nib.load(file).get_fdata().squeeze()
 
-        # load the lh mask
-        maskdata_lh = nib.load(lh_file).get_fdata().squeeze()
-        maskdata_rh = nib.load(rh_file).get_fdata().squeeze()
-
-    maskdata = np.hstack((maskdata_lh, maskdata_rh))
-
-    # sessions
-    n_sessions = 40
+    #maskdata = np.hstack((maskdata_lh, maskdata_rh))
 
     # subjects
     subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
@@ -138,7 +142,15 @@ for i, sub in enumerate(subs):
             targetspace=targetspace,
         )
         print(f'concatenating betas for {sub}')
-        betas_mean_shared515 = np.concatenate(betas_mean_shared515, axis=1).astype(np.float32)
+        
+        # concatenate over the last dimension
+        # check dimensions
+        n_dim = len(betas_mean_shared515[0].shape)
+        if n_dim == 2:
+            betas_mean_shared515 = np.concatenate(betas_mean_shared515, axis=1).astype(np.float32)
+        elif n_dim == 4:
+            betas_mean_shared515 = np.concatenate(betas_mean_shared515, axis=3).astype(np.float32)
+        #betas_mean_shared515 = np.concatenate(betas_mean_shared515, axis=1).astype(np.float32)
 
         print(f'averaging betas for {sub}')
         #betas_mean = average_over_conditions(
@@ -174,7 +186,6 @@ for i, sub in enumerate(subs):
     #        conditions_sampled
     #    )
 
-    #%%
     # save the subject's full ROI RDMs
     for roi, mask_name in ROIS.items():
 
@@ -184,7 +195,7 @@ for i, sub in enumerate(subs):
 
         #if not os.path.exists(rdm_file):
 
-        if mask_name == "thalamus":
+        if mask_name == "thalamus" or mask_name == "MTL":
             vs_mask = maskdata >= 1
         else:
             # logical array of mask vertices
@@ -192,18 +203,28 @@ for i, sub in enumerate(subs):
         print(f'working on ROI: {mask_name}')
 
         #masked_betas = betas_mean[vs_mask, :]
-        masked_betas_shared515 = betas_mean_shared515[vs_mask, :]
+        n_dim = len(betas_mean_shared515.shape)
+        if n_dim == 2:
+            masked_betas_shared515 = betas_mean_shared515[vs_mask, :]
+        elif n_dim == 4:
+            masked_betas_shared515 = betas_mean_shared515[vs_mask, :]
 
-        good_vox = [
-            True if np.sum(
-                np.isnan(x)
-                ) == 0 else False for x in masked_betas_shared515]
+        #%%
+        check_nans = False
+        if check_nans:
+            good_vox = [
+                True if np.sum(
+                    np.isnan(x)
+                    ) == 0 else False for x in masked_betas_shared515]
 
-        if np.sum(good_vox) != len(good_vox):
-            print(f'found some NaN for ROI: {mask_name} - {sub}')
+            if np.sum(good_vox) != len(good_vox):
+                print(f'found some NaN for ROI: {mask_name} - {sub}')
 
-        masked_betas_shared515 = masked_betas_shared515[good_vox, :]
+            masked_betas_shared515 = masked_betas_shared515[good_vox, :]
 
+        else:
+            # replace NaNs with 0
+            masked_betas_shared515 = np.nan_to_num(masked_betas_shared515)
         # prepare for correlation distance
         X = masked_betas_shared515.T
 
@@ -213,8 +234,13 @@ for i, sub in enumerate(subs):
         #rdm = pdist(X, metric='correlation')
         rdm = cdist(X, X, metric='correlation')
 
-        if np.any(np.isnan(rdm)):
-            raise ValueError
+        if check_nans:
+            if np.any(np.isnan(rdm)):
+                raise ValueError
+        else:
+            if np.any(np.isnan(rdm)):
+                print(f'found some NaN for ROI: {mask_name} - {sub}')
+                rdm = np.nan_to_num(rdm)
 
         elapsed_time = time.time() - start_time
         print(

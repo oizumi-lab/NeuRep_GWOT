@@ -19,8 +19,9 @@ from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
-#roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
-roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
+
+roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+#roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
 n_sample = 10
 seed_list = range(n_sample)
 #seed_list = range(5, 10)
@@ -61,9 +62,13 @@ for seed_id, groups in enumerate(groups_list):
     for roi_pair in roi_pairs:
         roi1, roi2 = roi_pair
         representations = []
-        for j, group in enumerate(groups):
-            roi = roi_pair[j]
+        for j, roi in enumerate(roi_pair):
             RDMs = []
+            if n_groups == 1:
+                group = groups[0]
+            else:
+                group = groups[j]
+            
             for i in group:
                 RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
                 RDMs.append(RDM)
@@ -90,7 +95,10 @@ for seed_id, groups in enumerate(groups_list):
         init_mat_plan = 'random'
         data_name = f"NSD_across_roi_seed{seed}"
         
-        device = 'cuda:0'
+        if n_groups == 1:
+            data_name += "_single_group"
+        
+        device = 'cuda:1'
 
         if "cuda" in device:
             sinkhorn_method = "sinkhorn_log" # please choose the method of sinkhorn implemented by POT (URL : https://pythonot.github.io/gen_modules/ot.bregman.html#id87). For using GPU, "sinkhorn_log" is recommended.
@@ -111,7 +119,7 @@ for seed_id, groups in enumerate(groups_list):
             n_iter=1, 
             max_iter=500,
             sampler_name="tpe", 
-            eps_list=[1e-4, 1e-2],
+            eps_list=[1e-4, 1e-2], 
             eps_log=True,
             device=device,
             to_types=to_types,
@@ -139,7 +147,10 @@ for seed_id, groups in enumerate(groups_list):
             #cbar_label_size=40,
             )
 
-        fig_dir = f"../results/figs/across_roi/seed{seed}/"
+        if n_groups == 1:
+            fig_dir = f"../results/figs/across_roi/single_group/"
+        else:
+            fig_dir = f"../results/figs/across_roi/seed{seed}/"
         os.makedirs(fig_dir, exist_ok=True)
 
         alignment.show_sim_mat(
@@ -257,7 +268,10 @@ for seed_id, groups in enumerate(groups_list):
         #cat_accuracy_all = pd.concat([cat_accuracy_all, cat_accuracy], axis=0)
         
     # save data
-    save_dir = f'../results/gw_alignment/across_roi/seed{seed}/'
+    if n_groups == 1:
+        save_dir = f'../results/gw_alignment/across_roi/single_group/'
+    else:
+        save_dir = f'../results/gw_alignment/across_roi/seed{seed}/'
     os.makedirs(save_dir, exist_ok=True)
     
     top_k_accuracy = top_k_accuracy.T
@@ -289,7 +303,10 @@ rsa_corr_all = pd.DataFrame()
 gwd_all = pd.DataFrame()
 
 for seed in range(n_sample):
-    main_results_dir = f'../results/gw_alignment/across_roi/seed{seed}/'
+    if n_groups == 1:
+        main_results_dir = f'../results/gw_alignment/across_roi/single_group/'
+    else:
+        main_results_dir = f'../results/gw_alignment/across_roi/seed{seed}/'
     
     top_k_accuracy = pd.read_csv(os.path.join(main_results_dir, 'top_k_accuracy.csv'))
     k_nearest_accuracy = pd.read_csv(os.path.join(main_results_dir, 'k_nearest_accuracy.csv'))
@@ -304,7 +321,10 @@ for seed in range(n_sample):
     gwd_all = pd.concat([gwd_all, gwd], axis=0)
 
 # save
-save_dir = f'../results/gw_alignment/across_roi/'
+if n_groups == 1:
+    save_dir = f'../results/gw_alignment/across_roi/single_group/'
+else:
+    save_dir = f'../results/gw_alignment/across_roi/'
 os.makedirs(save_dir, exist_ok=True)
 top_k_accuracy_all.to_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
 k_nearest_accuracy_all.to_csv(os.path.join(save_dir, 'k_nearest_accuracy.csv'))

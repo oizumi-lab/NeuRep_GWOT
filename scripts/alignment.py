@@ -9,6 +9,7 @@ import torch
 import random
 import seaborn as sns
 import matplotlib.pyplot as plt
+import itertools
 
 from src.utils import sample_participants, split_lists
 from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
@@ -19,22 +20,33 @@ n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 #roi_list = ['hV4'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
-roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
+# roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
+roi_list = ['OPA', 'PPA', 'RSC']
+#roi_list = ['thalamus', 'MTL']
 n_sample = 10
 seed_list = range(n_sample)
 #seed_list = range(5, 10)
 #seed_list = [4]
 
-compute_OT = False
+one_vs_one = False
+if one_vs_one:
+    seed_list = [0]
+
+compute_OT = True
 get_embedding = False
 
 #%%
 
 groups_list = []
 for seed in seed_list:
-    subj_list = sample_participants(n_subj, n_subj, seed)
-    groups = split_lists(subj_list, n_groups)
-    groups_list.append(groups)
+    if one_vs_one:
+        subj_pairs = itertools.combinations(range(len(subj_list)), 2)
+        groups = [[[pair[0]], [pair[1]]] for pair in subj_pairs]
+        groups_list = groups
+    else:
+        subj_list = sample_participants(n_subj, n_subj, seed)
+        groups = split_lists(subj_list, n_groups)
+        groups_list.append(groups)
     
 # category data
 category_mat = pd.read_csv("../data/category_mat_shared515.csv", index_col=0)
@@ -86,8 +98,13 @@ for roi in roi_list:
         #main_results_dir = "../results/gw_alignment/"
         main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
         init_mat_plan = 'random'
-        data_name = f"NSD_within_{roi}_seed{seed}"
-        pair_name = f"Group1_{roi}_vs_Group2_{roi}"
+        
+        if one_vs_one:
+            data_name = f"NSD_within_{roi}_one_vs_one"
+            pair_name = f"subj{groups[0][0]}_vs_subj{groups[1][0]}"
+        else:
+            data_name = f"NSD_within_{roi}_seed{seed}"
+            pair_name = f"Group1_{roi}_vs_Group2_{roi}"
         
         opt_config = OptimizationConfig(
             init_mat_plan=init_mat_plan,
@@ -125,13 +142,18 @@ for roi in roi_list:
             ylabel_size = 35,
             )
 
-        os.makedirs(f"../results/figs/{roi}/seed{seed}/", exist_ok=True)
+        if one_vs_one:
+            fig_dir = f"../results/figs/{roi}/one_vs_one/"
+        else:
+            fig_dir = f"../results/figs/{roi}/seed{seed}/"
+        
+        os.makedirs(fig_dir, exist_ok=True)
 
         alignment.show_sim_mat(
             sim_mat_format="sorted",
             visualization_config=vis_config, 
             show_distribution=False,
-            fig_dir=f"../results/figs/{roi}/seed{seed}/"
+            fig_dir=fig_dir
             )
         
         alignment.RSA_get_corr()
@@ -162,7 +184,7 @@ for roi in roi_list:
             OT_format="sorted",
             return_data=True,
             visualization_config=vis_config_OT,
-            fig_dir=f"../results/figs/{roi}/seed{seed}/",
+            fig_dir=fig_dir,
             save_dataframe=True
             )
         
@@ -205,7 +227,7 @@ for roi in roi_list:
 
         alignment.show_optimization_log(
             visualization_config=vis_config_log, 
-            fig_dir=f"../results/figs/{roi}/seed{seed}/"
+            fig_dir=fig_dir
             )
 
         ## Calculate the accuracy of the optimized OT matrix
@@ -233,7 +255,7 @@ for roi in roi_list:
 
         alignment.plot_accuracy(
             eval_type="ot_plan", 
-            fig_dir=f"../results/figs/{roi}/seed{seed}/", 
+            fig_dir=fig_dir, 
             fig_name="accuracy_ot_plan.png"
             )
         
@@ -253,7 +275,7 @@ for roi in roi_list:
         
         alignment.plot_accuracy(
             eval_type="ot_plan", 
-            fig_dir=f"../results/figs/{roi}/seed{seed}/", 
+            fig_dir=fig_dir, 
             fig_name="category_level_accuracy_ot_plan.png"
             )
         
@@ -276,7 +298,7 @@ for roi in roi_list:
             alignment.visualize_embedding(
                 dim=3,
                 visualization_config=vis_config_emb,
-                fig_dir=f"../results/figs/{roi}/seed{seed}/",
+                fig_dir=fig_dir,
                 category_name_list=category_name_list,
                 category_idx_list=category_idx_list,
                 num_category_list=num_category_list,
