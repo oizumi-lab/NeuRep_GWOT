@@ -13,6 +13,8 @@ from nsddatapaper_rsa.utils.nsd_get_data import get_conditions, get_betas
 from nsddatapaper_rsa.utils.utils import average_over_conditions
 from nsdcode.nsd_mapdata import NSDmapdata
 
+from src.utils import sample_participants, split_lists, show_matrix
+
 #%%
 """
     module to gather the region of interest rdms

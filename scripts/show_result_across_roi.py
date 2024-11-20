@@ -11,7 +11,7 @@ import scipy.cluster.hierarchy as sch
 #%%
 # load results
 data_dir = '../results/gw_alignment/'
-roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC']
+roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']
 #roi_list = ["early", "midventral", "ventral", "midlateral", "lateral", "midparietal", "parietal", "thalamus", "MTL"]
 
 all_data = pd.DataFrame(columns=['roi1', 'roi2', 'rsa_corr', 'top1_acc', 'category_top1', 'gwd'])

@@ -21,7 +21,8 @@ n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 #roi_list = ['hV4'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
 # roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
-roi_list = ['OPA', 'PPA', 'RSC']
+# roi_list = ['pVTC', 'aVTC', 'v1', 'v2'] # cuda:0
+roi_list = ['v3', 'OPA', 'PPA', 'RSC', 'MTL'] # cuda:2
 #roi_list = ['thalamus', 'MTL']
 n_sample = 10
 seed_list = range(n_sample)
@@ -32,7 +33,10 @@ one_vs_one = False
 if one_vs_one:
     seed_list = [0]
 
+RDM_concat = True
+
 compute_OT = True
+device = 'cuda:2'
 get_embedding = False
 
 #%%
@@ -73,12 +77,16 @@ for roi in roi_list:
         
         representations = []
         for j, group in enumerate(groups):
-            RDMs = []
-            for i in group:
-                RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
-                RDMs.append(RDM)
-            RDMs = np.stack(RDMs)
-            mean_RDM = np.mean(RDMs, axis=0)
+            
+            if RDM_concat:
+                mean_RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/seed{seed}_group{j}_{roi}_fullrdm_shared515_correlation.npy")
+            else:
+                RDMs = []
+                for i in group:
+                    RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
+                    RDMs.append(RDM)
+                RDMs = np.stack(RDMs)
+                mean_RDM = np.mean(RDMs, axis=0)
 
             representation = Representation(
                 name=f"Group{j+1}_{roi}",
@@ -99,11 +107,13 @@ for roi in roi_list:
         main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
         init_mat_plan = 'random'
         
+        concat_or_not = '_concat' if RDM_concat else ''
+        
         if one_vs_one:
             data_name = f"NSD_within_{roi}_one_vs_one"
             pair_name = f"subj{groups[0][0]}_vs_subj{groups[1][0]}"
         else:
-            data_name = f"NSD_within_{roi}_seed{seed}"
+            data_name = f"NSD_within_{roi}_seed{seed}{concat_or_not}"
             pair_name = f"Group1_{roi}_vs_Group2_{roi}"
         
         opt_config = OptimizationConfig(
@@ -115,7 +125,7 @@ for roi in roi_list:
             sampler_name="tpe", 
             eps_list=[1e-4, 1e-2],
             eps_log=True,
-            device='cuda:1',
+            device=device,
             to_types='torch',
             multi_gpu=False
         )
@@ -145,7 +155,7 @@ for roi in roi_list:
         if one_vs_one:
             fig_dir = f"../results/figs/{roi}/one_vs_one/"
         else:
-            fig_dir = f"../results/figs/{roi}/seed{seed}/"
+            fig_dir = f"../results/figs/{roi}/seed{seed}{concat_or_not}/"
         
         os.makedirs(fig_dir, exist_ok=True)
 

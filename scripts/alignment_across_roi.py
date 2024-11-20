@@ -20,13 +20,16 @@ n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 
-roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3', 'OPA', 'PPA', 'RSC', 'MTL'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
 #roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
 n_sample = 10
 seed_list = range(n_sample)
 #seed_list = range(5, 10)
 
 compute_OT = False
+device = 'cuda:3'
+
+RDM_concat = True
 
 #%%
 # subjects groups for each seed
@@ -35,6 +38,7 @@ for seed in seed_list:
     subj_list = sample_participants(n_subj, n_subj, seed)
     groups = split_lists(subj_list, n_groups)
     groups_list.append(groups)
+    
     
 # roi pairs
 roi_pairs = list(itertools.combinations(roi_list, 2))
@@ -63,17 +67,21 @@ for seed_id, groups in enumerate(groups_list):
         roi1, roi2 = roi_pair
         representations = []
         for j, roi in enumerate(roi_pair):
-            RDMs = []
-            if n_groups == 1:
-                group = groups[0]
-            else:
-                group = groups[j]
             
-            for i in group:
-                RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
-                RDMs.append(RDM)
-            RDMs = np.stack(RDMs)
-            mean_RDM = np.mean(RDMs, axis=0)
+            if RDM_concat:
+                mean_RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/'seed{seed}_group{j}_{roi}_fullrdm_shared515_correlation.npy")
+            else:
+                RDMs = []
+                if n_groups == 1:
+                    group = groups[0]
+                else:
+                    group = groups[j]
+                
+                for i in group:
+                    RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/subj0{i+1}_{roi}_fullrdm_shared515_correlation.npy")
+                    RDMs.append(RDM)
+                RDMs = np.stack(RDMs)
+                mean_RDM = np.mean(RDMs, axis=0)
 
             representation = Representation(
                 name=f"{roi}",
@@ -93,12 +101,12 @@ for seed_id, groups in enumerate(groups_list):
         #main_results_dir = "../results/gw_alignment/"
         main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
         init_mat_plan = 'random'
-        data_name = f"NSD_across_roi_seed{seed}"
+        
+        concat_or_not = '_concat' if RDM_concat else ''
+        data_name = f"NSD_across_roi_seed{seed}{concat_or_not}"
         
         if n_groups == 1:
             data_name += "_single_group"
-        
-        device = 'cuda:1'
 
         if "cuda" in device:
             sinkhorn_method = "sinkhorn_log" # please choose the method of sinkhorn implemented by POT (URL : https://pythonot.github.io/gen_modules/ot.bregman.html#id87). For using GPU, "sinkhorn_log" is recommended.
@@ -150,7 +158,7 @@ for seed_id, groups in enumerate(groups_list):
         if n_groups == 1:
             fig_dir = f"../results/figs/across_roi/single_group/"
         else:
-            fig_dir = f"../results/figs/across_roi/seed{seed}/"
+            fig_dir = f"../results/figs/across_roi/seed{seed}{concat_or_not}/"
         os.makedirs(fig_dir, exist_ok=True)
 
         alignment.show_sim_mat(

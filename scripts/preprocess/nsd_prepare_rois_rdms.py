@@ -13,6 +13,7 @@ from nsd_access.nsd_access import NSDAccess
 from nsddatapaper_rsa.utils.nsd_get_data import get_conditions, get_betas
 from nsddatapaper_rsa.utils.utils import average_over_conditions
 from nsdcode.nsd_mapdata import NSDmapdata
+from src.utils import sample_participants, split_lists, show_matrix
 
 #%%
 """
@@ -24,6 +25,21 @@ n_sessions = 40
 n_subjects = 8
 # subjects
 subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
+
+
+#%%
+n_subj = 8
+n_groups = 2
+subj_list = subs
+n_sample = 10
+seed_list = range(n_sample)
+
+# subjects groups for each seed
+groups_list = []
+for seed in seed_list:
+    subj_list = sample_participants(n_subj, n_subj, seed)
+    groups = split_lists(subj_list, n_groups)
+    groups_list.append(groups)
 
 #%%
 
