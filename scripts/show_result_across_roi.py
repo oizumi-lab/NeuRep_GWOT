@@ -11,7 +11,7 @@ import scipy.cluster.hierarchy as sch
 #%%
 # load results
 data_dir = '../results/gw_alignment/'
-roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']
+roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC']
 #roi_list = ["early", "midventral", "ventral", "midlateral", "lateral", "midparietal", "parietal", "thalamus", "MTL"]
 
 all_data = pd.DataFrame(columns=['roi1', 'roi2', 'rsa_corr', 'top1_acc', 'category_top1', 'gwd'])
@@ -105,6 +105,20 @@ for result in ['rsa_corr', 'top1_acc', 'category_top1', 'gwd']:
     plt.tight_layout()
     plt.show()
     plt.savefig(fig_dir+f'{result}_swarmplot.png')
+
+#%%
+# rsa_corrを横軸、top1_accを縦軸、roiを色にしたプロットを作成
+plt.figure(figsize=(10, 8))
+plt.style.use('seaborn-v0_8-darkgrid')
+sns.scatterplot(x='rsa_corr', y='top1_acc', hue='roi', data=df_for_plot, palette=palette, s=100)
+plt.xlabel('RSA Correlation', size=20)
+plt.ylabel('Top-1 Accuracy (%)', size=20)
+plt.xticks(size=15)
+plt.yticks(size=15)
+plt.legend(title='ROI', title_fontsize='13', fontsize='11')
+plt.tight_layout()
+plt.show()
+plt.savefig(fig_dir+'rsa_vs_top1_acc_scatterplot.png')
 #%%
 # across roi
 df_rsa = pd.read_csv(data_dir+f'across_roi/rsa_correlation.csv')

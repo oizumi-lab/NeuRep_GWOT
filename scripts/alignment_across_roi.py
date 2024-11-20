@@ -69,7 +69,7 @@ for seed_id, groups in enumerate(groups_list):
         for j, roi in enumerate(roi_pair):
             
             if RDM_concat:
-                mean_RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/'seed{seed}_group{j}_{roi}_fullrdm_shared515_correlation.npy")
+                mean_RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/seed{seed}_group{j}_{roi}_fullrdm_shared515_correlation.npy")
             else:
                 RDMs = []
                 if n_groups == 1:

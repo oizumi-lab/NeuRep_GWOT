@@ -21,8 +21,8 @@ n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 #roi_list = ['hV4'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
 # roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
-# roi_list = ['pVTC', 'aVTC', 'v1', 'v2'] # cuda:0
-roi_list = ['v3', 'OPA', 'PPA', 'RSC', 'MTL'] # cuda:2
+roi_list = ['pVTC', 'aVTC', 'v1', 'v2'] # cuda:0
+# roi_list = ['v3', 'OPA', 'PPA', 'RSC', 'MTL'] # cuda:2
 #roi_list = ['thalamus', 'MTL']
 n_sample = 10
 seed_list = range(n_sample)
@@ -36,7 +36,8 @@ if one_vs_one:
 RDM_concat = True
 
 compute_OT = True
-device = 'cuda:2'
+# device = 'cuda:2'
+device = 'cuda:0'
 get_embedding = False
 
 #%%
@@ -119,7 +120,7 @@ for roi in roi_list:
         opt_config = OptimizationConfig(
             init_mat_plan=init_mat_plan,
             db_params={"drivername": "sqlite"},
-            num_trial=200,
+            num_trial=100,
             n_iter=1, 
             max_iter=200,
             sampler_name="tpe", 
