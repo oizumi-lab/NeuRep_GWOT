@@ -24,7 +24,7 @@ subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
 
 
 
-#ROIS = {1: 'pVTC', 2: 'aVTC', 3: 'v1', 4: 'v2', 5: 'v3'}
+ROIS = {1: 'pVTC', 2: 'aVTC', 3: 'v1', 4: 'v2', 5: 'v3'}
 #ROIS = {7: 'hV4'}
 #ROIS = {1: "LGN", 2: "ventralPul", 3: "dorsolateralPul", 4: "dorsomedialPul", 5: "SC"}
 #ROIS = {1: "thalamus"}
@@ -34,7 +34,7 @@ subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
 # we use the fsaverage space.
 targetspace = 'func1pt8mm' # 'func1pt8mm''fsaverage'
 
-files = ["streams", "thalamus", "MTL"]
+files = ["MTL", "default", "floc-places"]#"streams", "thalamus", 
 targetspaces = ["fsaverage", "func1pt8mm", "func1pt8mm"]
 
 voxel_numbers = pd.DataFrame(columns=['sub', 'roi', 'voxel_number'])
@@ -111,6 +111,10 @@ for i, sub in enumerate(subs):
             ROIS = {1: "thalamus"}
         elif file_name == "MTL":
             ROIS = {1: "MTL"}
+        elif file_name == "default":
+            ROIS = {1: 'pVTC', 2: 'aVTC', 3: 'v1', 4: 'v2', 5: 'v3'}
+        elif file_name == "floc-places":
+            ROIS = {1: "OPA", 2: "PPA", 3: "RSC"} 
         
         # check numbers of voxels
         for roi, mask_name in ROIS.items():

@@ -27,9 +27,9 @@ seed_list = range(n_sample)
 #seed_list = range(5, 10)
 
 compute_OT = False
-device = 'cuda:3'
+device = 'cuda:1'
 
-RDM_concat = True
+RDM_concat = False
 
 #%%
 # subjects groups for each seed

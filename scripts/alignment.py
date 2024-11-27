@@ -16,14 +16,27 @@ from GW_methods.src.align_representations import Representation, AlignRepresenta
 from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
 #%%
+
+### Check carefully before running
+# alert
+delete_results = True
+compute_OT = True
+
+device = 'cuda:2'
+RDM_concat = False
+
+
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
-#roi_list = ['hV4'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
-# roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
-roi_list = ['pVTC', 'aVTC', 'v1', 'v2'] # cuda:0
-# roi_list = ['v3', 'OPA', 'PPA', 'RSC', 'MTL'] # cuda:2
-#roi_list = ['thalamus', 'MTL']
+
+# roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']
+# roi_list = ['OPA'] # cuda:0
+# roi_list = ['PPA'] # cuda:1
+roi_list = ['RSC'] # cuda:2
+
+
+# roi_list = ['pVTC']
 n_sample = 10
 seed_list = range(n_sample)
 #seed_list = range(5, 10)
@@ -33,11 +46,7 @@ one_vs_one = False
 if one_vs_one:
     seed_list = [0]
 
-RDM_concat = True
-
-compute_OT = True
 # device = 'cuda:2'
-device = 'cuda:0'
 get_embedding = False
 
 #%%
@@ -191,7 +200,7 @@ for roi in roi_list:
 
         OT_sorted = alignment.gw_alignment(
             compute_OT=compute_OT,
-            delete_results=False,
+            delete_results=delete_results,
             OT_format="sorted",
             return_data=True,
             visualization_config=vis_config_OT,
@@ -318,7 +327,7 @@ for roi in roi_list:
         
         #%%
     # save data
-    save_dir = f'../results/gw_alignment/within{roi}/'
+    save_dir = f'../results/gw_alignment/within{roi}{concat_or_not}/'
     os.makedirs(save_dir, exist_ok=True)
 
     top_k_accuracy.to_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
@@ -343,7 +352,7 @@ for roi in roi_list:
 # top k acc
 top_k_list = [1, 3, 5]
 for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
+    save_dir = f'../results/gw_alignment/within{roi}{concat_or_not}/'
     df_acc = pd.read_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
     
     # for each k
@@ -376,7 +385,7 @@ for roi in roi_list:
 top_k = 1
 all_data = pd.DataFrame()
 for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
+    save_dir = f'../results/gw_alignment/within{roi}{concat_or_not}/'
     df_acc = pd.read_csv(os.path.join(save_dir, 'top_k_accuracy.csv'))
     
     pair_name = f'Group1_{roi}_vs_Group2_{roi}'
@@ -411,7 +420,7 @@ plt.show()
 top_k = 1
 all_data = pd.DataFrame()
 for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
+    save_dir = f'../results/gw_alignment/within{roi}{concat_or_not}/'
     df_acc = pd.read_csv(os.path.join(save_dir, 'category_accuracy.csv'))
     
     pair_name = f'Group1_{roi}_vs_Group2_{roi}'
@@ -445,7 +454,7 @@ plt.show()
 # rsa
 all_data = pd.DataFrame()
 for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
+    save_dir = f'../results/gw_alignment/within{roi}{concat_or_not}/'
     df_acc = pd.read_csv(os.path.join(save_dir, 'rsa_correlation.csv'), index_col=0)
     
     pair_name = f'Group1_{roi}_vs_Group2_{roi}'
@@ -475,7 +484,7 @@ plt.show()
 # gwd
 all_data = pd.DataFrame()
 for roi in roi_list:
-    save_dir = f'../results/gw_alignment/within{roi}/'
+    save_dir = f'../results/gw_alignment/within{roi}{concat_or_not}/'
     df_acc = pd.read_csv(os.path.join(save_dir, 'gw_distance.csv'), index_col=0)
     
     pair_name = f'Group1_{roi}_vs_Group2_{roi}'

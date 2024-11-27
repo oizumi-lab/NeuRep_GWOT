@@ -10,8 +10,10 @@ import scipy.cluster.hierarchy as sch
 
 #%%
 # load results
+concat = False
+concat_str = '_concat' if concat else ''
 data_dir = '../results/gw_alignment/'
-roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC']
+roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']#
 #roi_list = ["early", "midventral", "ventral", "midlateral", "lateral", "midparietal", "parietal", "thalamus", "MTL"]
 
 all_data = pd.DataFrame(columns=['roi1', 'roi2', 'rsa_corr', 'top1_acc', 'category_top1', 'gwd'])
@@ -19,19 +21,19 @@ df_for_plot = pd.DataFrame(columns=['roi', 'rsa_corr', 'top1_acc', 'category_top
 
 # within roi
 for roi in roi_list:
-    df_rsa = pd.read_csv(data_dir+f'within{roi}/rsa_correlation.csv')
+    df_rsa = pd.read_csv(data_dir+f'within{roi}{concat_str}/rsa_correlation.csv')
     rsa_corr = df_rsa['correlation'].mean()
     rsa_list = df_rsa['correlation'].values.tolist()
     
-    df_gwd = pd.read_csv(data_dir+f'within{roi}/gw_distance.csv')
+    df_gwd = pd.read_csv(data_dir+f'within{roi}{concat_str}/gw_distance.csv')
     gwd = df_gwd['gwd'].mean()
     gwd_list = df_gwd['gwd'].values.tolist()
     
-    df_acc = pd.read_csv(data_dir+f'within{roi}/top_k_accuracy.csv')
+    df_acc = pd.read_csv(data_dir+f'within{roi}{concat_str}/top_k_accuracy.csv')
     top1_acc = df_acc[df_acc['top_n'] == 1].iloc[:, 1].mean()
     top1_acc_list = df_acc[df_acc['top_n'] == 1].iloc[:, 1].values.tolist()
     
-    df_category = pd.read_csv(data_dir+f'within{roi}/category_accuracy.csv')
+    df_category = pd.read_csv(data_dir+f'within{roi}{concat_str}/category_accuracy.csv')
     category_top1 = df_category[df_category['top_n'] == 1].iloc[:, 1].mean()
     category_top1_list = df_category[df_category['top_n'] == 1].iloc[:, 1].values.tolist()
     
@@ -57,8 +59,9 @@ for roi in roi_list:
 #%%
 # within roi
 # sworm plot
-fig_dir = '../results/figs/within_roi/'
-palette = sns.color_palette('bright', n_colors=5)
+fig_dir = f'../results/figs/within_roi{concat_str}/'
+os.makedirs(fig_dir, exist_ok=True)
+palette = sns.color_palette('bright', n_colors=len(roi_list))
 for result in ['rsa_corr', 'top1_acc', 'category_top1', 'gwd']:
     plt.figure(figsize=(8, 8))
     plt.style.use('seaborn-v0_8-darkgrid')
