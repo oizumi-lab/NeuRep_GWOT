@@ -19,21 +19,32 @@ from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_
 
 ### Check carefully before running
 # alert
-delete_results = True
+delete_results = False
+if delete_results:
+    conform = input("Are you sure you want to delete the results? (y/n)")
+    if conform != 'y':
+        raise ValueError("Results are not deleted.")
+
 compute_OT = True
 
-device = 'cuda:2'
-RDM_concat = False
+device = 'cuda:3'
+RDM_concat = True
 
 
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 
-# roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']
+roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']
 # roi_list = ['OPA'] # cuda:0
 # roi_list = ['PPA'] # cuda:1
-roi_list = ['RSC'] # cuda:2
+# roi_list = ['RSC'] # cuda:2
+
+# concatをcuda:0~4で4分割
+# roi_list = ['v1', 'v2'] # cuda:0
+# roi_list = ['v3', 'pVTC'] # cuda:1
+# roi_list = ['aVTC', 'OPA'] # cuda:2
+# roi_list = ['PPA', 'RSC', 'MTL'] # cuda:3
 
 
 # roi_list = ['pVTC']

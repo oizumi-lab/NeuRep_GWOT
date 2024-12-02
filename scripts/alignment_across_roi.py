@@ -16,20 +16,70 @@ from GW_methods.src.align_representations import Representation, AlignRepresenta
 from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
 #%%
+### Check carefully before running
+# raise alert
+
+compute_OT = True
+
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 
-roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3', 'OPA', 'PPA', 'RSC', 'MTL'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+# roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3', 'OPA', 'PPA', 'RSC', 'MTL'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+roi_list_1 = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] # cuda:3
+roi_list_2 = ['OPA', 'PPA', 'RSC', 'MTL'] # cuda:3
+
+# set the combination of roi pairs between roi_list_1 and roi_list_2
+pairs_list = [(roi1, roi2) for roi1 in roi_list_1 for roi2 in roi_list_2]
+
+
+# # across_concat
+# device = "cuda:3"
+# roi_list = roi_list_1
+# roi_pairs = list(itertools.combinations(roi_list, 2))
+# delete_results = True
+# RDM_concat = True
+
+# across_concat_2
+# device = "cuda:3"
+# roi_list = roi_list_2
+# roi_pairs = list(itertools.combinations(roi_list, 2))
+# delete_results = True
+# RDM_concat = True
+
+# across_concat_3
+# device = "cuda:2"
+# roi_list = roi_list_1 + roi_list_2
+# roi_pairs = pairs_list
+# delete_results = True
+# RDM_concat = True
+
+
+# across
+# device = "cuda:1"
+# roi_list = roi_list_2
+# roi_pairs = list(itertools.combinations(roi_list, 2))
+# delete_results = True
+# RDM_concat = False
+
+# across_2
+device = "cuda:1"
+roi_list = roi_list_1 + roi_list_2
+roi_pairs = pairs_list
+delete_results = True
+RDM_concat = False
+
+
+if delete_results:
+    conform = input("Are you sure you want to delete the results? (y/n)")
+    if conform != 'y':
+        raise ValueError("Results are not deleted.")
+
 #roi_list = ["early", "midventral", "midlateral", "midparietal", "ventral", "lateral", "parietal"]
 n_sample = 10
 seed_list = range(n_sample)
 #seed_list = range(5, 10)
 
-compute_OT = False
-device = 'cuda:1'
-
-RDM_concat = False
 
 #%%
 # subjects groups for each seed
@@ -38,10 +88,6 @@ for seed in seed_list:
     subj_list = sample_participants(n_subj, n_subj, seed)
     groups = split_lists(subj_list, n_groups)
     groups_list.append(groups)
-    
-    
-# roi pairs
-roi_pairs = list(itertools.combinations(roi_list, 2))
 
 # category data
 category_mat = pd.read_csv("../data/category_mat_shared515.csv", index_col=0)
@@ -125,7 +171,7 @@ for seed_id, groups in enumerate(groups_list):
             db_params={"drivername": "sqlite"},
             num_trial=100,
             n_iter=1, 
-            max_iter=500,
+            max_iter=200,
             sampler_name="tpe", 
             eps_list=[1e-4, 1e-2], 
             eps_log=True,
@@ -143,6 +189,7 @@ for seed_id, groups in enumerate(groups_list):
             metric="euclidean",
             main_results_dir=main_results_dir,
             data_name=data_name, 
+            # pairs_computed=pairs_computed,
             )
 
         vis_config = VisualizationConfig(
@@ -190,7 +237,7 @@ for seed_id, groups in enumerate(groups_list):
 
         OT_sorted = alignment.gw_alignment(
             compute_OT=compute_OT,
-            delete_results=False,
+            delete_results=delete_results,
             OT_format="sorted",
             return_data=True,
             visualization_config=vis_config_OT,

@@ -107,7 +107,7 @@ for roi_category in roi_categories:
                         rh_file = os.path.join(nsd_dir, 'nsddata', 'freesurfer', f'{sub}', 'label', 'rh.streams.mgz')
                     
                     
-                    if roi_categories == "highlevelvisual":
+                    if roi_category == "highlevelvisual":
                         # load the lh mask
                         maskdata_lh = nib.load(lh_file).get_fdata().squeeze()
                         maskdata_rh = nib.load(rh_file).get_fdata().squeeze()
