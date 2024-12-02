@@ -10,7 +10,7 @@ import scipy.cluster.hierarchy as sch
 
 #%%
 # load results
-concat = True
+concat = False
 concat_str = '_concat' if concat else ''
 data_dir = '../results/gw_alignment/'
 roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']#

@@ -10,10 +10,15 @@ import random
 import itertools
 import seaborn as sns
 import matplotlib.pyplot as plt
+import logging
 
 from src.utils import sample_participants, split_lists, show_matrix
 from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
 from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
+
+# Configure logging
+logging.basicConfig(filename='alignment_across_roi.log', level=logging.INFO, 
+                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 #%%
 ### Check carefully before running
@@ -97,6 +102,8 @@ object_labels, category_idx_list, category_num_list, new_category_name_list = ge
 for seed_id, groups in enumerate(groups_list):
     seed = seed_list[seed_id]
     
+    logging.info(f'Starting iteration for seed {seed}')
+    
     ### set dataframes
     top_k_list = [1, 3, 5]
     top_k_accuracy = pd.DataFrame()
@@ -111,6 +118,7 @@ for seed_id, groups in enumerate(groups_list):
     
     for roi_pair in roi_pairs:
         roi1, roi2 = roi_pair
+        logging.info(f'Processing ROI pair: {roi1}, {roi2}')
         representations = []
         for j, roi in enumerate(roi_pair):
             
@@ -218,6 +226,8 @@ for seed_id, groups in enumerate(groups_list):
         alignment.RSA_get_corr()
         rsa_corr = pd.DataFrame([alignment.RSA_corr], index=['correlation'])
         df_rsa = pd.concat([df_rsa, rsa_corr], axis=1)
+        
+        logging.info(f'RSA correlation for {roi1}, {roi2}: {alignment.RSA_corr}')
 
         vis_config_OT = VisualizationConfig(
             figsize=(8, 6), 
@@ -255,6 +265,8 @@ for seed_id, groups in enumerate(groups_list):
             gwds[pair_name] = df['value'].min()
         gwds = pd.DataFrame([gwds], index=['gwd'])
         df_gwd = pd.concat([df_gwd, gwds], axis=1)
+        
+        logging.info(f'GWD for {roi1}, {roi2}: {gwds}')
 
         vis_config_log = VisualizationConfig(
             figsize=(8, 6), 
@@ -296,6 +308,8 @@ for seed_id, groups in enumerate(groups_list):
         top_k_accuracy = pd.concat([top_k_accuracy, alignment.top_k_accuracy], axis=1)
         k_nearest_accuracy = pd.concat([k_nearest_accuracy, alignment.k_nearest_matching_rate], axis=1)
         
+        logging.info(f'Top-k accuracy for {roi1}, {roi2}: {alignment.top_k_accuracy}')
+        logging.info(f'K-nearest accuracy for {roi1}, {roi2}: {alignment.k_nearest_matching_rate}')
         
         # category level
         eval_mat = np.matmul(category_mat.values, category_mat.values.T)
@@ -313,6 +327,8 @@ for seed_id, groups in enumerate(groups_list):
             )
         
         cat_accuracy = pd.concat([cat_accuracy, alignment.top_k_accuracy], axis=1)
+        
+        logging.info(f'Category accuracy for {roi1}, {roi2}: {alignment.top_k_accuracy}')
         
         #top_k_accuracy = top_k_accuracy.T
         #top_k_accuracy.index.name = 'pair_name'
@@ -348,6 +364,8 @@ for seed_id, groups in enumerate(groups_list):
     df_gwd = df_gwd.T
     df_gwd.index.name = 'pair_name'
     df_gwd.to_csv(os.path.join(save_dir, 'gw_distance.csv'))
+    
+    logging.info(f'Saved results for seed {seed}')
     
 #%%
 # concatenate results

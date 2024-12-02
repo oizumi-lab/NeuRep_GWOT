@@ -15,6 +15,9 @@ from src.utils import sample_participants, split_lists
 from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
 from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
+import logging
+
+logging.basicConfig(filename='alignment.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 #%%
 
 ### Check carefully before running
@@ -25,7 +28,7 @@ if delete_results:
     if conform != 'y':
         raise ValueError("Results are not deleted.")
 
-compute_OT = True
+compute_OT = False
 
 device = 'cuda:3'
 RDM_concat = True
@@ -79,6 +82,7 @@ object_labels, category_idx_list, category_num_list, new_category_name_list = ge
     
 #%%
 for roi in roi_list:
+    logging.info(f"Processing ROI: {roi}")
     ### set dataframes
     top_k_list = [1, 3, 5]
     top_k_accuracy = pd.DataFrame()
@@ -95,6 +99,7 @@ for roi in roi_list:
     
     for seed_id, groups in enumerate(groups_list):
         seed = seed_list[seed_id]
+        logging.info(f"Seed: {seed}, Groups: {groups}")
         
         representations = []
         for j, group in enumerate(groups):
@@ -190,8 +195,8 @@ for roi in roi_list:
         alignment.RSA_get_corr()
         rsa_corr = pd.DataFrame([alignment.RSA_corr], index=['correlation'])
         df_rsa = pd.concat([df_rsa, rsa_corr], axis=1)
+        logging.info(f"RSA correlation: {alignment.RSA_corr}")
 
-        #%%
         vis_config_OT = VisualizationConfig(
             figsize=(8, 6), 
             #title_size = 15, 
@@ -218,7 +223,8 @@ for roi in roi_list:
             fig_dir=fig_dir,
             save_dataframe=True
             )
-        
+        logging.info(f"OT sorted: {OT_sorted}")
+
         OT = alignment.gw_alignment(
             compute_OT=compute_OT,
             delete_results=False,
@@ -226,7 +232,8 @@ for roi in roi_list:
             return_data=True,
             return_figure=False,
             )
-        
+        logging.info(f"OT: {OT}")
+
         np.save(os.path.join(main_results_dir, data_name+'_'+pair_name, init_mat_plan, 'data/gw_best'), OT)
         
         # record gwd
@@ -239,8 +246,8 @@ for roi in roi_list:
             gwds[pair_name] = df['value'].min()
         gwds = pd.DataFrame([gwds], index=['gwd'])
         df_gwd = pd.concat([df_gwd, gwds], axis=1)
+        logging.info(f"GWD: {gwds}")
 
-        #%%
         vis_config_log = VisualizationConfig(
             figsize=(8, 6), 
             title_size = 10, 
@@ -266,23 +273,21 @@ for roi in roi_list:
             top_k_list=top_k_list, 
             eval_type="ot_plan"
             )
-        
+        logging.info(f"Top-k accuracy: {alignment.top_k_accuracy}")
+
         if get_embedding:
             alignment.calc_accuracy(
                 top_k_list=top_k_list, 
                 eval_type="k_nearest",
                 )
-
-            k_nearest_accuracy = pd.concat([k_nearest_accuracy, alignment.k_nearest_matching_rate])
+            logging.info(f"K-nearest accuracy: {alignment.k_nearest_matching_rate}")
 
             alignment.calc_accuracy(
                 top_k_list=top_k_list,
                 eval_type="k_nearest",
                 ot_to_evaluate=np.eye(515)
             )
-
-            sup_accuracy = pd.concat([sup_accuracy, alignment.k_nearest_matching_rate])
-        
+            logging.info(f"Supervised accuracy: {alignment.k_nearest_matching_rate}")
 
         alignment.plot_accuracy(
             eval_type="ot_plan", 
@@ -303,7 +308,8 @@ for roi in roi_list:
             #ot_to_evaluate=OT_sorted[0],
             eval_mat = eval_mat
         )
-        
+        logging.info(f"Category level accuracy: {alignment.top_k_accuracy}")
+
         alignment.plot_accuracy(
             eval_type="ot_plan", 
             fig_dir=fig_dir, 
@@ -312,7 +318,6 @@ for roi in roi_list:
         
         cat_accuracy = pd.concat([cat_accuracy, alignment.top_k_accuracy])
         
-        #%%
         if get_embedding:
             vis_config_emb = VisualizationConfig(
                 figsize=(8, 8),
@@ -336,7 +341,6 @@ for roi in roi_list:
 
             )
         
-        #%%
     # save data
     save_dir = f'../results/gw_alignment/within{roi}{concat_or_not}/'
     os.makedirs(save_dir, exist_ok=True)
@@ -354,7 +358,7 @@ for roi in roi_list:
     df_gwd = df_gwd.T
     df_gwd.index.name = 'pair_name'
     df_gwd.to_csv(os.path.join(save_dir, 'gw_distance.csv'))
-    
+    logging.info(f"Results saved for ROI: {roi}")
 # %%
 
 
