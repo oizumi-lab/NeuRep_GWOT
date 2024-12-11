@@ -14,6 +14,7 @@ from nsddatapaper_rsa.utils.utils import average_over_conditions
 from nsdcode.nsd_mapdata import NSDmapdata
 
 from src.utils import sample_participants, split_lists, show_matrix
+from scipy.stats import zscore
 
 #%%
 """
@@ -25,6 +26,9 @@ n_sessions = 40
 n_subjects = 8
 # subjects
 subs = ['subj0{}'.format(x+1) for x in range(n_subjects)]
+
+normalize = True
+normalize_str = 'zscored_' if normalize else ''
 
 #%%
 #%%
@@ -41,7 +45,7 @@ for seed in seed_list:
     groups = split_lists(subj_list, n_groups)
     groups_list.append(groups)
 
-roi_categories = ["highlevelvisual"]#, "streams""floc-places", "MTL", 
+roi_categories = ["floc-places", "MTL"]#, "streams""floc-places", "MTL","highlevelvisual",  
 # ROIS = {1: 'pVTC', 2: 'aVTC', 3: 'v1', 4: 'v2', 5: 'v3'}
 #ROIS = {7: 'hV4'}
 #ROIS = {1: "LGN", 2: "ventralPul", 3: "dorsolateralPul", 4: "dorsomedialPul", 5: "SC"}
@@ -170,7 +174,7 @@ for roi_category in roi_categories:
                         targetspace=targetspace,
                     )
                     print(f'concatenating betas for {sub}')
-                    
+
                     n_dim = len(betas_mean_shared515[0].shape)
                     if n_dim == 2:
                         betas_mean_shared515 = np.concatenate(betas_mean_shared515, axis=1).astype(np.float32)
@@ -206,11 +210,14 @@ for roi_category in roi_categories:
                         vs_mask = maskdata == roi
                     masked_betas_shared515.append(betas[vs_mask, :])
                 
+                if normalize:
+                    print(f'normalizing betas for {sub}')
+                    masked_betas_shared515 = [zscore(x, axis=0) for x in masked_betas_shared515]
                 masked_betas_shared515 = np.concatenate(masked_betas_shared515, axis=0)
                 print(masked_betas_shared515.shape)
 
                 rdm_file_shared515 = os.path.join(
-                    outpath, f'seed{seed}_group{group_idx}_{mask_name}_fullrdm_shared515_correlation.npy'
+                    outpath, f'seed{seed}_group{group_idx}_{mask_name}_{normalize_str}fullrdm_shared515_correlation.npy'
                 )
 
                 check_nans = False

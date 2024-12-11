@@ -36,7 +36,7 @@ object_labels, category_idx_list, num_category_list, category_name_list = get_ca
 
 #%%
 # ot_path は手動で指定
-roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC']
+roi_list = ['OPA', 'PPA', 'RSC', 'MTL']
 
 for roi in roi_list:
     #if roi == 'v1':
@@ -51,9 +51,9 @@ for roi in roi_list:
     #    vmax = 0.00001
     vmax = 0.00001
         
-    seed=8
+    seed=0
 
-    main_results_dir = "../results/gw_alignment/"
+    main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
     init_mat_plan = 'random'
     data_name = f"NSD_within_{roi}_seed{seed}"
     pair_name = f"Group1_{roi}_vs_Group2_{roi}"

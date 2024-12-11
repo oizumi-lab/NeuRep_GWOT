@@ -16,6 +16,7 @@ from src.utils import sample_participants, split_lists, show_matrix
 from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
 from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
+#%%
 # Configure logging
 logging.basicConfig(filename='alignment_across_roi.log', level=logging.INFO, 
                     format='%(asctime)s:%(levelname)s:%(message)s')
@@ -24,19 +25,23 @@ logging.basicConfig(filename='alignment_across_roi.log', level=logging.INFO,
 ### Check carefully before running
 # raise alert
 
-compute_OT = True
+compute_OT = False
 
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 
-# roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3', 'OPA', 'PPA', 'RSC', 'MTL'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
+roi_list = ['pVTC', 'aVTC', 'v1', 'v2', 'v3', 'OPA', 'PPA', 'RSC', 'MTL'] #['pVTC', 'aVTC', 'v1', 'v2', 'v3']
 roi_list_1 = ['pVTC', 'aVTC', 'v1', 'v2', 'v3'] # cuda:3
 roi_list_2 = ['OPA', 'PPA', 'RSC', 'MTL'] # cuda:3
 
 # set the combination of roi pairs between roi_list_1 and roi_list_2
 pairs_list = [(roi1, roi2) for roi1 in roi_list_1 for roi2 in roi_list_2]
 
+device = "cuda:3"
+roi_pairs = list(itertools.combinations(roi_list, 2))
+delete_results = False
+RDM_concat = False
 
 # # across_concat
 # device = "cuda:3"
@@ -68,12 +73,13 @@ pairs_list = [(roi1, roi2) for roi1 in roi_list_1 for roi2 in roi_list_2]
 # RDM_concat = False
 
 # across_2
-device = "cuda:1"
-roi_list = roi_list_1 + roi_list_2
-roi_pairs = pairs_list
-delete_results = True
-RDM_concat = False
+# device = "cuda:1"
+# roi_list = roi_list_1 + roi_list_2
+# roi_pairs = pairs_list
+# delete_results = False
+# RDM_concat = False
 
+#%%
 
 if delete_results:
     conform = input("Are you sure you want to delete the results? (y/n)")
@@ -84,6 +90,9 @@ if delete_results:
 n_sample = 10
 seed_list = range(n_sample)
 #seed_list = range(5, 10)
+
+# log
+logging.info(f"Start alignment with RDM concat: {RDM_concat}, compute OT: {compute_OT}, device: {device}")
 
 
 #%%
@@ -162,17 +171,6 @@ for seed_id, groups in enumerate(groups_list):
         if n_groups == 1:
             data_name += "_single_group"
 
-        if "cuda" in device:
-            sinkhorn_method = "sinkhorn_log" # please choose the method of sinkhorn implemented by POT (URL : https://pythonot.github.io/gen_modules/ot.bregman.html#id87). For using GPU, "sinkhorn_log" is recommended.
-            data_type= "float"
-            to_types='torch'
-            multi_gpu = False # This parameter is only designed for "torch". # "True" : all the GPU installed in your environment are used, "list (e.g.[0,2,3])"" : cuda:0,2,3, and "False" : single gpu will be used.
-
-        elif device == "cpu":
-            sinkhorn_method = "sinkhorn"
-            data_type = "double"
-            to_types = 'numpy'
-            multi_gpu = False
             
         opt_config = OptimizationConfig(
             init_mat_plan=init_mat_plan,
@@ -181,14 +179,11 @@ for seed_id, groups in enumerate(groups_list):
             n_iter=1, 
             max_iter=200,
             sampler_name="tpe", 
-            eps_list=[1e-4, 1e-2], 
+            eps_list=[1e-4, 1e-2],
             eps_log=True,
             device=device,
-            to_types=to_types,
-            data_type=data_type,
-            sinkhorn_method=sinkhorn_method,
-            multi_gpu=multi_gpu
-    
+            to_types='torch',
+            multi_gpu=[0, 1, 2, 3]
         )
         
         alignment = AlignRepresentations(
@@ -342,7 +337,7 @@ for seed_id, groups in enumerate(groups_list):
     if n_groups == 1:
         save_dir = f'../results/gw_alignment/across_roi/single_group/'
     else:
-        save_dir = f'../results/gw_alignment/across_roi/seed{seed}/'
+        save_dir = f'../results/gw_alignment/across_roi{concat_or_not}/seed{seed}/'
     os.makedirs(save_dir, exist_ok=True)
     
     top_k_accuracy = top_k_accuracy.T

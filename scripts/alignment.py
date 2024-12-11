@@ -22,23 +22,26 @@ logging.basicConfig(filename='alignment.log', level=logging.INFO, format='%(asct
 
 ### Check carefully before running
 # alert
-delete_results = False
+delete_results = True
 if delete_results:
     conform = input("Are you sure you want to delete the results? (y/n)")
     if conform != 'y':
         raise ValueError("Results are not deleted.")
 
-compute_OT = False
+compute_OT = True
 
 device = 'cuda:3'
-RDM_concat = True
+RDM_concat = False
+
+# log
+logging.info(f"Start alignment with RDM concat: {RDM_concat}, compute OT: {compute_OT}, device: {device}")
 
 
 n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 
-roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']
+roi_list = ['RSC']
 # roi_list = ['OPA'] # cuda:0
 # roi_list = ['PPA'] # cuda:1
 # roi_list = ['RSC'] # cuda:2
@@ -153,7 +156,7 @@ for roi in roi_list:
             eps_log=True,
             device=device,
             to_types='torch',
-            multi_gpu=False
+            multi_gpu=[0, 1, 2, 3]
         )
         
         alignment = AlignRepresentations(
@@ -226,7 +229,7 @@ for roi in roi_list:
         logging.info(f"OT sorted: {OT_sorted}")
 
         OT = alignment.gw_alignment(
-            compute_OT=compute_OT,
+            compute_OT=False,
             delete_results=False,
             OT_format="default",
             return_data=True,
