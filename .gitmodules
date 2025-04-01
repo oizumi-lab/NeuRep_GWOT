@@ -1,0 +1,22 @@
+[submodule "GWTune"]
+	path = GWTune
+	url = git@github.com:oizumi-lab/GWTune.git
+    branch = main
+
+[submodule "nsd_acess"]
+
+[submodule "nsdcode"]
+	path = nsdcode
+	url = git@github.com:cvnlab/nsdcode.git
+	branch = main
+
+[submodule "nsd_access"]
+	path = nsd_access
+	url = git@github.com:tknapen/nsd_access.git
+	branch = main
+
+
+[submodule "nsddatapaper_rsa"]
+	path = nsddatapaper_rsa
+	url = git@github.com:Charestlab/nsddatapaper_rsa.git
+	branch = main
