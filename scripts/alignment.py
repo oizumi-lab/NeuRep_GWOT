@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import itertools
 
 from src.utils import sample_participants, split_lists
-from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
-from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
+from GWTune.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
+from GWTune.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
 import logging
 
@@ -131,8 +131,9 @@ for roi in roi_list:
             representations.append(representation)
 
         
-        #main_results_dir = "../results/gw_alignment/"
-        main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
+        main_results_dir = "../results/gw_alignment/"
+        # main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
+        os.makedirs(main_results_dir, exist_ok=True)
         init_mat_plan = 'random'
         
         concat_or_not = '_concat' if RDM_concat else ''

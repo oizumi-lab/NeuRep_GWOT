@@ -161,8 +161,9 @@ for seed_id, groups in enumerate(groups_list):
             representations.append(representation)
 
         
-        #main_results_dir = "../results/gw_alignment/"
-        main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
+        main_results_dir = "../results/gw_alignment/"
+        # main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
+        os.makedirs(main_results_dir, exist_ok=True)
         init_mat_plan = 'random'
         
         concat_or_not = '_concat' if RDM_concat else ''
