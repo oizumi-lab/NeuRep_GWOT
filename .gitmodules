@@ -3,8 +3,6 @@
 	url = git@github.com:oizumi-lab/GWTune.git
     branch = main
 
-[submodule "nsd_acess"]
-
 [submodule "nsdcode"]
 	path = nsdcode
 	url = git@github.com:cvnlab/nsdcode.git
