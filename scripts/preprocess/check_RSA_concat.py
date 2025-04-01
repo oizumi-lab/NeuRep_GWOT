@@ -23,7 +23,7 @@ n_subj = 8
 n_groups = 2
 subj_list = [f"subj0{i+1}" for i in range(8)]
 
-roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC'] #, 'OPA', 'PPA', 'RSC', 'MTL'
+roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL'] #, 'OPA', 'PPA', 'RSC', 'MTL'
 
 
 # roi_list = ['pVTC']

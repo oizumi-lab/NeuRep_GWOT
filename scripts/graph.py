@@ -36,7 +36,10 @@ object_labels, category_idx_list, num_category_list, category_name_list = get_ca
 
 #%%
 # ot_path は手動で指定
-roi_list = ['OPA', 'PPA', 'RSC', 'MTL']
+roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']
+
+concat = True
+concat_or_not = '_concat' if concat else ''
 
 for roi in roi_list:
     #if roi == 'v1':
@@ -49,16 +52,17 @@ for roi in roi_list:
     #    vmax = 0.00001
     #elif roi == 'aVTC':
     #    vmax = 0.00001
-    vmax = 0.00001
+    # vmax = 0.00001
+    vmax = 0.000001
         
-    seed=0
+    seed=7
 
     main_results_dir = "/mnt/NAS/user_data/ken-takeda/GWOT/Takeda_NSD/gw_alignment"
     init_mat_plan = 'random'
-    data_name = f"NSD_within_{roi}_seed{seed}"
+    data_name = f"NSD_within_{roi}_seed{seed}{concat_or_not}"
     pair_name = f"Group1_{roi}_vs_Group2_{roi}"
 
-    fig_dir = f'../results/figs/{roi}/seed{seed}'
+    fig_dir = f"../results/figs/{roi}/seed{seed}{concat_or_not}/"
 
     ot_data = os.path.join(main_results_dir, data_name+'_'+pair_name, init_mat_plan, 'data/gw_best.npy')
     #target = "Supervised"
@@ -74,7 +78,10 @@ for roi in roi_list:
     sorted_ot = sort_matrix_with_categories(ot, category_idx_list)
 
     
-    enlarged_list = ['dining table', 'chair', 'bird', 'elephant']
+    # enlarged_list = ['dining table', 'chair', 'bird', 'elephant']
+    # enlarged_list = ['bird', 'elephant', 'giraffe', 'car', 'airplane', 'motorcycle']
+    # enlarged_list = ['bird', 'elephant', 'giraffe', 'car', 'airplane', 'motorcycle', 'chair', 'dining table']
+    enlarged_list = ['elephant', 'giraffe', 'chair', 'dining table']
     enlarged_idx_list = []
     category_boundary_idx = []
     for category_name in enlarged_list:
@@ -122,5 +129,5 @@ for roi in roi_list:
     plt.yticks([])
     plt.colorbar(label='Probability')
     # plt.show()
-    plt.savefig(f"{fig_dir}/enlarged_OT.svg", dpi=300, bbox_inches='tight')
+    plt.savefig(f"{fig_dir}/enlarged_OT.png", dpi=300, bbox_inches='tight')
 # %%

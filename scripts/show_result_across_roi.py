@@ -10,7 +10,7 @@ import scipy.cluster.hierarchy as sch
 
 #%%
 # load results
-concat = False
+concat = True
 concat_str = '_concat' if concat else ''
 data_dir = '../results/gw_alignment/'
 roi_list = ['v1', 'v2', 'v3', 'pVTC', 'aVTC', 'OPA', 'PPA', 'RSC', 'MTL']#
@@ -142,6 +142,19 @@ plt.tight_layout()
 plt.show()
 plt.savefig(fig_dir+'rsa_vs_top5_acc_scatterplot.png')
 
+# top1_accを横軸、top5_accを縦軸、roiを色にしたプロットを作成
+plt.figure(figsize=(10, 8))
+plt.style.use('seaborn-v0_8-darkgrid')
+sns.scatterplot(x='top1_acc', y='top5_acc', hue='roi', data=df_for_plot, palette=palette, s=100)
+plt.xlabel('Top-1 Accuracy (%)', size=20)
+plt.ylabel('Top-5 Accuracy (%)', size=20)
+plt.xticks(size=15)
+plt.yticks(size=15)
+plt.legend(title='ROI', title_fontsize='13', fontsize='11')
+plt.tight_layout()
+plt.show()
+plt.savefig(fig_dir+'top1_vs_top5_acc_scatterplot.png')
+
 
 #%%
 # across roi
@@ -167,7 +180,8 @@ all_data.to_csv(data_dir+'result_across_roi.csv')
 # visualize the result as a matrix
 all_data = pd.read_csv(data_dir+'result_across_roi.csv', index_col=0)
 result_list = ['rsa_corr', 'top1_acc', 'category_top1', 'gwd']
-fig_dir = '../results/figs/across_roi/'
+fig_dir = f'../results/figs/across_roi{concat_str}/'
+os.makedirs(fig_dir, exist_ok=True)
 
 for result in result_list:
     # get the matrix from the dataframe and make it symmetric

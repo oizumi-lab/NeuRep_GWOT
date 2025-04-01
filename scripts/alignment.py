@@ -28,13 +28,9 @@ if delete_results:
     if conform != 'y':
         raise ValueError("Results are not deleted.")
 
-compute_OT = True
+compute_OT = False
 
-device = 'cuda:3'
-RDM_concat = False
-
-# log
-logging.info(f"Start alignment with RDM concat: {RDM_concat}, compute OT: {compute_OT}, device: {device}")
+RDM_concat = True
 
 
 n_subj = 8
@@ -47,11 +43,14 @@ roi_list = ['RSC']
 # roi_list = ['RSC'] # cuda:2
 
 # concatをcuda:0~4で4分割
+device = 'cuda:3'
 # roi_list = ['v1', 'v2'] # cuda:0
-# roi_list = ['v3', 'pVTC'] # cuda:1
-# roi_list = ['aVTC', 'OPA'] # cuda:2
-# roi_list = ['PPA', 'RSC', 'MTL'] # cuda:3
+# roi_list = ['v3', 'pVTC'] # cuda:2
+roi_list = ['aVTC', 'OPA'] # cuda:3
+# roi_list = ['PPA', 'RSC', 'MTL'] # cuda:1
 
+# log
+logging.info(f"Start alignment with RDM concat: {RDM_concat}, compute OT: {compute_OT}, device: {device}")
 
 # roi_list = ['pVTC']
 n_sample = 10
@@ -108,7 +107,7 @@ for roi in roi_list:
         for j, group in enumerate(groups):
             
             if RDM_concat:
-                mean_RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/seed{seed}_group{j}_{roi}_fullrdm_shared515_correlation.npy")
+                mean_RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/seed{seed}_group{j}_{roi}_zscored_fullrdm_shared515_correlation.npy")
             else:
                 RDMs = []
                 for i in group:

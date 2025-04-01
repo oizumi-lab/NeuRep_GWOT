@@ -38,31 +38,31 @@ roi_list_2 = ['OPA', 'PPA', 'RSC', 'MTL'] # cuda:3
 # set the combination of roi pairs between roi_list_1 and roi_list_2
 pairs_list = [(roi1, roi2) for roi1 in roi_list_1 for roi2 in roi_list_2]
 
-device = "cuda:3"
-roi_pairs = list(itertools.combinations(roi_list, 2))
-delete_results = False
-RDM_concat = False
+# device = "cuda:3"
+# roi_pairs = list(itertools.combinations(roi_list, 2))
+# delete_results = False
+# RDM_concat = False
 
 # # across_concat
-# device = "cuda:3"
+# device = "cuda:1"
 # roi_list = roi_list_1
 # roi_pairs = list(itertools.combinations(roi_list, 2))
 # delete_results = True
 # RDM_concat = True
 
 # across_concat_2
-# device = "cuda:3"
+# device = "cuda:2"
 # roi_list = roi_list_2
 # roi_pairs = list(itertools.combinations(roi_list, 2))
 # delete_results = True
 # RDM_concat = True
 
 # across_concat_3
-# device = "cuda:2"
-# roi_list = roi_list_1 + roi_list_2
-# roi_pairs = pairs_list
-# delete_results = True
-# RDM_concat = True
+device = "cuda:3"
+roi_list = roi_list_1 + roi_list_2
+roi_pairs = pairs_list
+delete_results = True
+RDM_concat = True
 
 
 # across
@@ -132,7 +132,7 @@ for seed_id, groups in enumerate(groups_list):
         for j, roi in enumerate(roi_pair):
             
             if RDM_concat:
-                mean_RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/seed{seed}_group{j}_{roi}_fullrdm_shared515_correlation.npy")
+                mean_RDM = np.load(f"/mnt/NAS/common_data/natural-scenes-dataset/rsa/roi_analyses/seed{seed}_group{j}_{roi}_zscored_fullrdm_shared515_correlation.npy")
             else:
                 RDMs = []
                 if n_groups == 1:
