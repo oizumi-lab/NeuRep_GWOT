@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 import logging
 
 from src.utils import sample_participants, split_lists, show_matrix
-from GW_methods.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
-from GW_methods.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
+from GWTune.src.align_representations import Representation, AlignRepresentations, OptimizationConfig, VisualizationConfig
+from GWTune.src.utils.utils_functions import get_category_data, sort_matrix_with_categories
 
 #%%
 # Configure logging
