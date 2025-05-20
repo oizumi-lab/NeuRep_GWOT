@@ -1,5 +1,9 @@
 # NeuRep_GWOT Analysis Pipeline
 
+This is the analysis code for ["Unsupervised alignment reveals structural commonalities and differences in neural representations of natural scenes across individuals and brain areas"](https://www.cell.com/iscience/fulltext/S2589-0042(25)00688-1).
+
+This repository is for the analysis of human fMRI data. For the analysis code of mouse neuropixels data, please refer to [this repository](https://github.com/oizumi-lab/NeuRep_GWOT_mouse).
+
 ## Preprocessing
 1. **Download NSD Data**  
    Follow the instructions provided [here](https://cvnlab.slite.page/p/dC~rBTjqjb/How-to-get-the-data) to download the NSD dataset.
